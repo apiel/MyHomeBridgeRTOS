@@ -1,11 +1,3 @@
-/* Very basic example showing usage of access point mode and the DHCP server.
-
-   The ESP in the example runs a telnet server on 172.16.0.1 (port 23) that
-   outputs some status information if you connect to it, then closes
-   the connection.
-
-   This example code is in the public domain.
-*/
 #include <string.h>
 
 #include <espressif/esp_common.h>
@@ -16,6 +8,7 @@
 #include <dhcpserver.h>
 
 #include <lwip/api.h>
+#include <ssid_config.h>
 
 #include "config.h"
 #include "wifi.h"
@@ -28,6 +21,7 @@ void user_init(void)
   printf("MyHomeBridge version:%s\n", VERSION);
 
   wifi_init(); 
+  // wifi_new_connection(WIFI_SSID, WIFI_PASS);
   	
   xTaskCreate(&httpd_task, "http_server", 1024, NULL, 2, NULL);
 }

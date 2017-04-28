@@ -2,7 +2,6 @@
 
 #include <espressif/esp_common.h>
 #include <dhcpserver.h>
-#include <ssid_config.h>
 
 #include "config.h"
 #include "wifi.h"
@@ -15,15 +14,43 @@ void wifi_init(void)
   wifi_access_point();
 }
 
+void wifi_new_connection(char * ssid, char * password)
+{
+    printf("Connect to new wifi: %s %s", ssid, password);
+    // struct sdk_station_config config = {
+    //     .ssid = ssid,
+    //     .password = password,
+    // };
+
+    struct sdk_station_config config;    
+    if(ssid != NULL) {
+        strcpy((char*)(config.ssid), ssid);
+        
+        if(password != NULL) {
+            strcpy((char*)(config.password), password);
+        }
+        else {
+            config.password[0] = '\0';
+        }
+    }
+    else {
+        config.ssid[0]     = '\0';
+        config.password[0] = '\0';
+    }    
+
+    sdk_wifi_station_set_config(&config);
+    // sdk_wifi_station_disconnect();
+    sdk_wifi_station_connect();
+}
+
 void wifi_connect(void)
 {
-    struct sdk_station_config config = {
-        .ssid = WIFI_SSID,
-        .password = WIFI_PASS,
-    };
+    struct sdk_station_config config;
+    bool ret = sdk_wifi_station_get_config(&config);
+    if(ret) printf("existing wifi settings: ssid = %s, password = %s\n", config.ssid, config.password);
+    else printf("no wifi settings founds: ssid = %s, password = %s\n", config.ssid, config.password);
 
-    /* required to call wifi_set_opmode before station_set_config */
-    sdk_wifi_station_set_config(&config);
+    // sdk_wifi_station_disconnect();
     sdk_wifi_station_connect();  
 }
 

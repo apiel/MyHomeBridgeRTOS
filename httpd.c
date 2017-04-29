@@ -4,6 +4,33 @@
 
 #include "wifi.h"
 
+inline int ishex(int x)
+{
+	return	(x >= '0' && x <= '9')	||
+		(x >= 'a' && x <= 'f')	||
+		(x >= 'A' && x <= 'F');
+}
+ 
+int decode(const char *s, char *dec)
+{
+	char *o;
+	const char *end = s + strlen(s);
+	int c;
+ 
+	for (o = dec; s <= end; o++) {
+		c = *s++;
+		if (c == '+') c = ' ';
+		else if (c == '%' && (	!ishex(*s++)	||
+					!ishex(*s++)	||
+					!sscanf(s - 2, "%2x", &c)))
+			return -1;
+ 
+		if (dec) *o = c;
+	}
+ 
+	return o - dec;
+}
+
 char * get_from_uri(char * str, int start, int end, char * ret) 
 {
     char *str_start, *str_end;
@@ -17,25 +44,31 @@ char * get_from_uri(char * str, int start, int end, char * ret)
     return str_end;
 }
 
-// void parse_request(void *data)
-// {
-//     // printf("Received data:\n%s\n", (char*) data);
-//     if (!strncmp(data, "GET ", 4)) {
-//         char uri[100];
-//         get_from_uri(data, ' ', ' ', uri);
-//         printf("uri: %s\n", uri);
+void parse_request(void *data)
+{
+    // printf("Received data:\n%s\n", (char*) data);
+    if (!strncmp(data, "GET ", 4)) {
+        char uri[128];
+        get_from_uri(data, '/', ' ', uri);
+        printf("uri: %s\n", uri);
 
-//         if (strchr(uri, '?')) {
-//             char ssid[32], password[64];
-//             char * next = get_from_uri(uri, '=', '&', ssid);
-//             // printf(":ssid: %s :next: %s\n", ssid, next);
-//             get_from_uri(next, '=', '\0', password);
-//             printf(":ssid: %s :pwd: %s\n\n", ssid, password);
+        if (strchr(uri, '?')) {
+            char ssid[32], password[64];
+            char * next = get_from_uri(uri, '=', '&', ssid);
+            // printf(":ssid: %s :next: %s\n", ssid, next);
+            get_from_uri(next, '=', '\0', password);
+            // printf(":ssid: %s :pwd: %s\n\n", ssid, password);
 
-//             // wifi_new_connection(ssid, password);
-//         }
-//     }
-// }
+            char ssid2[32], password2[64];
+            decode(ssid, ssid2);
+            decode(password, password2);
+
+            printf(":ssid: %s :pwd: %s\n\n", ssid2, password2);
+
+            wifi_new_connection(ssid2, password2);
+        }
+    }
+}
 
 void httpd_task(void *pvParameters)
 {
@@ -53,27 +86,12 @@ void httpd_task(void *pvParameters)
         if (err == ERR_OK) {
             struct netbuf *nb;
             if ((err = netconn_recv(client, &nb)) == ERR_OK) {
-                void *data;
+                void *data = NULL;
                 u16_t len;
-                netbuf_data(nb, &data, &len);
-                // printf("Received data:\n%.*s\n", len, (char*) data);
-                // parse_request(&data);
-
-    if (!strncmp(data, "GET ", 4)) {
-        char uri[128];
-        get_from_uri(data, '/', ' ', uri);
-        printf("uri: %s\n", uri);
-
-        if (strchr(uri, '?')) {
-            char ssid[32], password[64];
-            char * next = get_from_uri(uri, '=', '&', ssid);
-            // printf(":ssid: %s :next: %s\n", ssid, next);
-            get_from_uri(next, '=', '\0', password);
-            printf(":ssid: %s :pwd: %s\n\n", ssid, password);
-
-            wifi_new_connection(ssid, password);
-        }
-    }                
+                if (netbuf_data(nb, &data, &len) == ERR_OK) {
+                    // printf("Received data:\n%.*s\n", len, (char*) data);
+                    parse_request(data);                         
+                }          
 
                 struct sdk_station_config config;
                 sdk_wifi_station_get_config(&config);

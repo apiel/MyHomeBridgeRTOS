@@ -6,6 +6,9 @@
 #include "config.h"
 #include "wifi.h"
 
+// We should deactivate sofap after connection to wifi
+// Use MAC address to generate SoftAP SSID
+
 void wifi_init(void)
 {
   sdk_wifi_set_opmode(STATIONAP_MODE); 

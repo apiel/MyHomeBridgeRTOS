@@ -87,7 +87,7 @@ void wifi_access_point_off(void)
     dhcpserver_stop();  
 }
 
-static const char * get_uid(void)
+const char * get_uid(void)
 {
     // Use MAC address for Station as unique ID
     static char uid[20];

@@ -20,11 +20,7 @@ void wifi_init(void)
 void wifi_new_connection(char * ssid, char * password)
 {
     printf("Connect to new wifi: %s %s", ssid, password);
-    // struct sdk_station_config config = {
-    //     .ssid = ssid,
-    //     .password = password,
-    // };
-
+    
     struct sdk_station_config config;    
     if(ssid != NULL) {
         strcpy((char*)(config.ssid), ssid);
@@ -66,18 +62,62 @@ void wifi_access_point(void)
   sdk_wifi_set_ip_info(1, &ap_ip);
 
   struct sdk_softap_config ap_config = {
-      .ssid = AP_SSID,
       .ssid_hidden = 0,
       .channel = 3,
-      .ssid_len = strlen(AP_SSID),
       .authmode = AUTH_WPA_WPA2_PSK,
       .password = AP_PSK,
       .max_connection = 1,
       .beacon_interval = 100,
   };
+  strcpy((char*)(ap_config.ssid), get_uid());
   sdk_wifi_softap_set_config(&ap_config);
 
   ip_addr_t first_client_ip;
   IP4_ADDR(&first_client_ip, 172, 16, 0, 2);
   dhcpserver_start(&first_client_ip, 4);     
+}
+
+void wifi_access_point_off(void)
+{
+    struct sdk_softap_config ap_config;
+    *ap_config.ssid = 0;
+    *ap_config.password = 0;
+
+    sdk_wifi_softap_set_config(&ap_config);  
+    dhcpserver_stop();  
+}
+
+static const char * get_uid(void)
+{
+    // Use MAC address for Station as unique ID
+    static char uid[20];
+    char mac[13];
+    static bool uid_done = false;
+    int8_t i;
+    uint8_t x;
+    if (!uid_done) {
+        memset(uid, 0, sizeof(uid));
+        strcpy(uid, DEVICE_ID);
+
+        if (!sdk_wifi_get_macaddr(STATION_IF, (uint8_t *)mac)) {
+            strcat(uid, "generic"); 
+        }
+        else {
+            for (i = 5; i >= 0; --i)
+            {
+                x = mac[i] & 0x0F;
+                if (x > 9) x += 7;
+                mac[i * 2 + 1] = x + '0';
+                x = mac[i] >> 4;
+                if (x > 9) x += 7;
+                mac[i * 2] = x + '0';
+            }
+            mac[12] = '\0';
+            strcat(uid, mac); 
+        }
+        uid_done = true;
+        printf("Device unique id: %s\n", uid);
+    }
+
+    return uid;
 }

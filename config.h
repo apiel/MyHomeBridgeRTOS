@@ -1,6 +1,4 @@
 
-#define DEVICE_ID "ESP_HELLO"
+#define DEVICE_ID "MHB_"
 #define VERSION "0.0.0" 
-
-#define AP_SSID "ESP_HELLO1234"
-#define AP_PSK "esp-open-rtos"
+#define AP_PSK "esp-open-rtos" // between 8 and 63 ASCII-encoded characters

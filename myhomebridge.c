@@ -46,6 +46,6 @@ void user_init(void)
   publish_queue = xQueueCreate(3, sizeof( struct MQTTMessage * ) );
 
   xTaskCreate(&httpd_task, "http_server", 1024, NULL, 2, NULL);
-  xTaskCreate(&beat_task, "beat_task", 256, NULL, 3, NULL);
+//   xTaskCreate(&beat_task, "beat_task", 256, NULL, 3, NULL);
   xTaskCreate(&mqtt_task, "mqtt_task", 1024, NULL, 4, NULL);  
 }

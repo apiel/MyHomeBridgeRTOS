@@ -9,6 +9,16 @@
 #include "config.h"
 #include "mqtt.h"
 
+static void  topic_received(mqtt_message_data_t *md)
+{
+    char * msg = malloc(md->message->payloadlen*sizeof(char));
+    memcpy(msg, md->message->payload, md->message->payloadlen);
+    msg[md->message->payloadlen] = '\0';
+    printf("Msg received.\n%s\n%s\n\n", md->topic->lenstring.data, msg);    // , (char *)md->message->payload
+
+    free(msg);
+}
+
 void  mqtt_task(void *pvParameters)
 {
     int ret         = 0;
@@ -24,6 +34,10 @@ void  mqtt_task(void *pvParameters)
     mqtt_network_new( &network );
     memset(mqtt_client_id, 0, sizeof(mqtt_client_id));
     strcpy(mqtt_client_id, get_uid());
+
+    char * topic = malloc(strlen(mqtt_client_id)+2*sizeof(char));
+    strcpy(topic, mqtt_client_id);
+    strcat(topic, "/#");    
 
     while(1) {
         // xSemaphoreTake(wifi_alive, portMAX_DELAY);
@@ -56,8 +70,10 @@ void  mqtt_task(void *pvParameters)
             continue;
         }
         printf("done\r\n");
-        xQueueReset(publish_queue);
-                
+
+        mqtt_subscribe(&client, topic, MQTT_QOS1, topic_received);
+        // mqtt_subscribe(&client, "MHB_5CCF7F2B6E1E/lol", MQTT_QOS1, topic_received);
+        xQueueReset(publish_queue);                
 
         while(1){
 
@@ -85,5 +101,6 @@ void  mqtt_task(void *pvParameters)
         mqtt_network_disconnect(&network);
         taskYIELD();
     }
+    free(topic);
 }
 

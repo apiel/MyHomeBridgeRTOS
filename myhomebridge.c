@@ -14,6 +14,7 @@
 #include "wifi.h"
 #include "httpd.h"
 #include "mqtt.h"
+#include "rf433.h"
 
 void  beat_task(void *pvParameters)
 {
@@ -42,6 +43,8 @@ void user_init(void)
 
   wifi_init(); 
   // wifi_new_connection(WIFI_SSID, WIFI_PASS);
+
+  rf433_init();
   	
   publish_queue = xQueueCreate(3, sizeof( struct MQTTMessage * ) );
 

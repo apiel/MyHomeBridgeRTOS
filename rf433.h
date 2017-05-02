@@ -1,11 +1,16 @@
 // #define RF433protocolCount 1
 
+struct MinMax {
+    uint16_t min;
+    uint16_t max;
+};
+
 struct RF433protocol
 {
-    uint16_t latch;
-    uint16_t latch2;
-    uint16_t low;
-    uint16_t hight;
+    struct MinMax latch;
+    struct MinMax latch2;
+    struct MinMax low;
+    struct MinMax hight;
     uint8_t len;
     bool only01or10;
 };

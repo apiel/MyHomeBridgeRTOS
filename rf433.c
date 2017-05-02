@@ -7,8 +7,14 @@
 #include "rf433.h"
 #include "pulse.h"
 
+uint8_t latch_stage = 0;
+char bits[256];
+uint8_t bit;
+uint8_t bit_error = 0;
+struct RF433protocol * current_protocol;
+
 struct RF433protocol rf433protocols[] = {
-    { 10500, 2500, 300, 1200, 64, true }
+    { {9500 , 11500}, {2350, 2750}, {150, 450}, {950, 1450}, 64, true }
 };
 
 uint8_t rf433protocols_count = sizeof(rf433protocols) / sizeof(rf433protocols[0]);
@@ -24,13 +30,17 @@ void rf433_pulse(uint16_t duration, uint16_t low)
     do_pulse(PIN_RF433_EMITTER, duration, low);
 }
 
+uint16_t rf433_middle(struct MinMax minmax) 
+{
+    return (minmax.max + minmax.min)*0.5;
+}
 
 void rf433_send(int id_protocol, char * code) 
 {
-    uint16_t low = rf433protocols[id_protocol].low; 
-    uint16_t hight = rf433protocols[id_protocol].hight; 
-    uint16_t latch = rf433protocols[id_protocol].latch;
-    uint16_t latch2 = rf433protocols[id_protocol].latch2;     
+    uint16_t low = rf433_middle(rf433protocols[id_protocol].low); 
+    uint16_t hight = rf433_middle(rf433protocols[id_protocol].hight); 
+    uint16_t latch = rf433_middle(rf433protocols[id_protocol].latch);
+    uint16_t latch2 = rf433_middle(rf433protocols[id_protocol].latch2);     
 
     // printf("rf433_send protocol: %d latch: %d latch2: %d low: %d hight: %d code: %s\n", id_protocol, latch, latch2, low, hight, code);   
 
@@ -76,11 +86,80 @@ void rf433_action(char * request)
     }
 }
 
+void rf433_add_bit(char b)
+{
+    bit_error = 0;
+    bits[bit] = b;
+
+    if(bit % 2 == 1) { // we could add it only if it s valid bit combination
+        if((bits[bit-1] ^ bits[bit]) == 0) { // must be either 01 or 10, cannot be 00 or 11
+            latch_stage = 0;
+            printf("invalid bit combination\n");
+        }
+    }
+
+    bit++;
+
+    if(bit == current_protocol->len) {
+        latch_stage = 0;
+        bits[bit] = '\0';
+        printf("rf433 receive: %d %s\n", 0, bits);
+    }    
+}
+
 void rf433_task(void *pvParameters)
 {
     unsigned long pulse;
     for(;;) {
-        pulse = get_pulse(PIN_RF433_RECEIVER, 0, 9999999999999);
-        if (pulse) printf("pulse %lu\n", pulse);
+        pulse = get_pulse(PIN_RF433_RECEIVER, 0);
+        // if (pulse) printf("pulse %lu\n", pulse);
+        
+        if (latch_stage == 0) {
+            for(int i=0; i < rf433protocols_count; i++) {
+                struct MinMax * minmax = &rf433protocols[i].latch;
+                if (pulse > minmax->min && pulse < minmax->max) {
+                    current_protocol = &rf433protocols[i];
+                    latch_stage = current_protocol->latch2.max ? 1 : 2;
+                    bit = 0;
+                    break;
+                }
+            }
+        }
+        else if (latch_stage == 1) {
+            if (pulse > current_protocol->latch2.min && pulse < current_protocol->latch2.max)
+                latch_stage = 2;
+        }
+        else if (latch_stage == 2) {
+            // printf("we rich the latch stage 2\n");
+
+            if(pulse > current_protocol->low.min && pulse < current_protocol->low.max) {
+                rf433_add_bit('0');
+                // bit_error = 0;
+                // bits[bit] = '0';
+            }
+            else if(pulse > current_protocol->hight.min && pulse < current_protocol->hight.max) {
+                rf433_add_bit('1');
+                // bit_error = 0;
+                // bits[bit] = '1';                
+            }
+            else if (bit_error++ > 3) {
+                latch_stage = 0;
+                printf("out of range %lu\n", pulse);
+                continue;
+            }
+
+            // if(bit % 2 == 1) {
+            //     if((bits[bit-1] ^ bits[bit]) == 0) // must be either 01 or 10, cannot be 00 or 11
+            //         latch_stage = 0;
+            // }
+
+            // bit++;
+
+            // if(bit == current_protocol->len) {
+            //     latch_stage = 0;
+            //     bits[bit] = '\0';
+            //     printf("rf433 receive: %d %s\n", 0, bits);
+            // }               
+        }        
     }
 }

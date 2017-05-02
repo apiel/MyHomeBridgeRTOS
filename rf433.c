@@ -5,6 +5,7 @@
 
 #include "config.h"
 #include "rf433.h"
+#include "pulse.h"
 
 struct RF433protocol rf433protocols[] = {
     { 10500, 2500, 300, 1200, 64, true }
@@ -18,46 +19,14 @@ void rf433_init(void)
     printf("RF433 protocols initialise: %d\n", rf433protocols_count);
 }
 
-void do_pulse(uint16_t duration, uint16_t low)
+void rf433_pulse(uint16_t duration, uint16_t low)
 {
-    gpio_write(PIN_RF433_EMITTER, 1);
-    sdk_os_delay_us(low);
-    gpio_write(PIN_RF433_EMITTER, 0);
-    sdk_os_delay_us(duration);
+    do_pulse(PIN_RF433_EMITTER, duration, low);
 }
 
-// void rf433_send(int id_protocol, char * code) 
-// {
-//     uint16_t low = rf433protocols[id_protocol].low; 
-//     uint16_t hight = rf433protocols[id_protocol].hight; 
-//     uint16_t latch = rf433protocols[id_protocol].latch;
-//     uint16_t latch2 = rf433protocols[id_protocol].latch2;    
-
-//     printf("rf433_send protocol: %d latch: %d latch2: %d low: %d hight: %d code: %s\n", id_protocol, latch, latch2, low, hight, code);
-
-//     if (latch) {
-//         do_pulse(latch, low);
-//         if (latch2) {
-//             do_pulse(latch2, low);
-//         }        
-//     }
-//     int end = strlen(code);
-//     for(int pos = 0; pos < end; pos++) {
-//       if (code[pos] == '0') {
-//         do_pulse(low, low);
-//       }
-//       else {
-//         do_pulse(hight, low);
-//       }
-//     }
-// }
 
 void rf433_send(int id_protocol, char * code) 
 {
-    // uint16_t low = 300; 
-    // uint16_t hight = 1200; 
-    // uint16_t latch = 10500;
-    // uint16_t latch2 = 2500;
     uint16_t low = rf433protocols[id_protocol].low; 
     uint16_t hight = rf433protocols[id_protocol].hight; 
     uint16_t latch = rf433protocols[id_protocol].latch;
@@ -65,15 +34,15 @@ void rf433_send(int id_protocol, char * code)
 
     // printf("rf433_send protocol: %d latch: %d latch2: %d low: %d hight: %d code: %s\n", id_protocol, latch, latch2, low, hight, code);   
 
-    do_pulse(latch, low);
-    do_pulse(latch2, low);
+    if (latch) rf433_pulse(latch, low);
+    if (latch2) rf433_pulse(latch2, low);
     int end = strlen(code);
     for(int pos = 0; pos < end; pos++) {
       if (code[pos] == '0') {
-        do_pulse(low, low);
+        rf433_pulse(low, low);
       }
       else {
-        do_pulse(hight, low);
+        rf433_pulse(hight, low);
       }
     }
 }
@@ -104,5 +73,14 @@ void rf433_action(char * request)
     }
     else {
         printf("rf433_action invalid parameters: %s\n", request);
+    }
+}
+
+void rf433_task(void *pvParameters)
+{
+    unsigned long pulse;
+    for(;;) {
+        pulse = get_pulse(PIN_RF433_RECEIVER, 0, 9999999999999);
+        if (pulse) printf("pulse %lu\n", pulse);
     }
 }

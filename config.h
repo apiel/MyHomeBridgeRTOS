@@ -15,3 +15,4 @@
 #define MQTT_PASS NULL
 
 #define PIN_RF433_EMITTER 15 // wemos d8
+#define PIN_RF433_RECEIVER 5 // wemos d1

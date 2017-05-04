@@ -8,7 +8,6 @@
         if (xthal_get_ccount() - start_ccount > timeout) { \
             return 0; \
         } \
-        taskYIELD(); \
     }   
 
 unsigned long get_pulse(uint8_t pin, uint8_t state)

@@ -14,7 +14,8 @@ uint8_t bit_error = 0;
 struct RF433protocol * current_protocol;
 
 struct RF433protocol rf433protocols[] = {
-    { {9500 , 11500}, {2350, 2750}, {150, 450}, {950, 1450}, 64, true }
+    { {9500 , 11500}, {2350, 2750}, {130, 450}, {950, 1450}, 64, true },
+    { {5650 , 5750}, {0, 0}, {150, 210}, {500, 610}, 24, false }
 };
 
 uint8_t rf433protocols_count = sizeof(rf433protocols) / sizeof(rf433protocols[0]);
@@ -64,6 +65,11 @@ void rf433_send_multi(int id_protocol, char * code)
     rf433_send(id_protocol, code);
     rf433_send(id_protocol, code);
     rf433_send(id_protocol, code);
+    rf433_send(id_protocol, code);
+    rf433_send(id_protocol, code);
+    rf433_send(id_protocol, code);
+    rf433_send(id_protocol, code);
+    rf433_send(id_protocol, code);    
 }
 
 // on1: 0 1010100110101001011010100110011010100110011010011001011010101010
@@ -86,27 +92,6 @@ void rf433_action(char * request)
     }
 }
 
-void rf433_add_bit(char b)
-{
-    bit_error = 0;
-    bits[bit] = b;
-
-    if(bit % 2 == 1) { // we could add it only if it s valid bit combination
-        if((bits[bit-1] ^ bits[bit]) == 0) { // must be either 01 or 10, cannot be 00 or 11
-            latch_stage = 0;
-            printf("invalid bit combination\n");
-        }
-    }
-
-    bit++;
-
-    if(bit == current_protocol->len) {
-        latch_stage = 0;
-        bits[bit] = '\0';
-        printf("rf433 receive: %d %s\n", 0, bits);
-    }    
-}
-
 void rf433_task(void *pvParameters)
 {
     unsigned long pulse;
@@ -120,6 +105,7 @@ void rf433_task(void *pvParameters)
                 if (pulse > minmax->min && pulse < minmax->max) {
                     current_protocol = &rf433protocols[i];
                     latch_stage = current_protocol->latch2.max ? 1 : 2;
+                    bit_error = 0;
                     bit = 0;
                     break;
                 }
@@ -128,38 +114,45 @@ void rf433_task(void *pvParameters)
         else if (latch_stage == 1) {
             if (pulse > current_protocol->latch2.min && pulse < current_protocol->latch2.max)
                 latch_stage = 2;
+            else bit_error++;
         }
         else if (latch_stage == 2) {
             // printf("we rich the latch stage 2\n");
 
             if(pulse > current_protocol->low.min && pulse < current_protocol->low.max) {
-                rf433_add_bit('0');
-                // bit_error = 0;
-                // bits[bit] = '0';
+                // rf433_add_bit('0');
+                bit_error = 0;
+                bits[bit] = '0';
             }
             else if(pulse > current_protocol->hight.min && pulse < current_protocol->hight.max) {
-                rf433_add_bit('1');
-                // bit_error = 0;
-                // bits[bit] = '1';                
+                // rf433_add_bit('1');
+                bit_error = 0;
+                bits[bit] = '1';                
             }
-            else if (bit_error++ > 3) {
-                latch_stage = 0;
+            else {
                 printf("out of range %lu\n", pulse);
-                continue;
+                bit_error++;
             }
 
-            // if(bit % 2 == 1) {
-            //     if((bits[bit-1] ^ bits[bit]) == 0) // must be either 01 or 10, cannot be 00 or 11
-            //         latch_stage = 0;
-            // }
+            if(current_protocol->only01or10 && bit % 2 == 1) {
+                if((bits[bit-1] ^ bits[bit]) == 0) {// must be either 01 or 10, cannot be 00 or 11
+                    latch_stage = 0;
+                    printf("invalid bit combination\n");
+                }
+            }
 
-            // bit++;
+            bit++;
 
-            // if(bit == current_protocol->len) {
-            //     latch_stage = 0;
-            //     bits[bit] = '\0';
-            //     printf("rf433 receive: %d %s\n", 0, bits);
-            // }               
-        }        
+            if(bit == current_protocol->len) {
+                latch_stage = 0;
+                bits[bit] = '\0';
+                printf("rf433 receive: %d %s\n", 0, bits);
+            }                
+        }
+        if (bit_error > 3) {
+            bit_error = 0;
+            printf("error at stage %d\n", latch_stage);
+            latch_stage = 0;
+        }
     }
 }

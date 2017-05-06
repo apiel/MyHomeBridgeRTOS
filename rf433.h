@@ -28,7 +28,7 @@ struct RF433protocol
     struct Pulse high;
     uint8_t zero;
     uint8_t one;
-    // uint8_t len;
+    uint8_t len; // not really necessary
     bool manchester_code;
 };
 

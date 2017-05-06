@@ -95,80 +95,14 @@ void rf433_action(char * request)
     }
 }
 
-// void rf433_task__(void *pvParameters)
-// {
-//     unsigned long pulse;
-//     for(;;) {
-//         pulse = get_pulse(PIN_RF433_RECEIVER, 0);
-//         // if (pulse) printf("pulse %lu\n", pulse);
-        
-//         if (latch_stage == 0) {
-//             for(int i=0; i < rf433protocols_count; i++) {
-//                 struct MinMax * minmax = &rf433protocols[i].latch;
-//                 if (pulse > minmax->min && pulse < minmax->max) {
-//                     current_protocol_id = i;
-//                     current_protocol = &rf433protocols[i];
-//                     latch_stage = current_protocol->latch2.max ? 1 : 2;
-//                     bit_error = 0;
-//                     bit = 0;
-//                     break;
-//                 }
-//             }
-//         }
-//         else if (latch_stage == 1) {
-//             if (pulse > current_protocol->latch2.min && pulse < current_protocol->latch2.max)
-//                 latch_stage = 2;
-//             else bit_error++;
-//         }
-//         else if (latch_stage == 2) {
-//             // printf("we rich the latch stage 2\n");
-
-//             if(pulse > current_protocol->low.min && pulse < current_protocol->low.max) {
-//                 // rf433_add_bit('0');
-//                 bit_error = 0;
-//                 bits[bit] = '0';
-//             }
-//             else if(pulse > current_protocol->hight.min && pulse < current_protocol->hight.max) {
-//                 // rf433_add_bit('1');
-//                 bit_error = 0;
-//                 bits[bit] = '1';                
-//             }
-//             else {
-//                 printf("out of range %lu protocol %d\n", pulse, current_protocol_id);
-//                 bit_error++;
-//             }
-
-//             if(current_protocol->only01or10 && bit % 2 == 1) {
-//                 if((bits[bit-1] ^ bits[bit]) == 0) {// must be either 01 or 10, cannot be 00 or 11
-//                     latch_stage = 0;
-//                     printf("invalid bit combination %d\n", current_protocol_id);
-//                 }
-//             }
-
-//             bit++;
-
-//             if(bit == current_protocol->len) {
-//                 latch_stage = 0;
-//                 bits[bit] = '\0';
-//                 printf("rf433 receive: %d %s\n", current_protocol_id, bits);
-//             }                
-//         }
-//         if (bit_error > 3) {
-//             bit_error = 0;
-//             printf("error at stage %d protocol %d\n", latch_stage, current_protocol_id);
-//             latch_stage = 0;
-//         }
-//     }
-// }
-
 #define PULSE_LOW_LOW 0
 #define PULSE_LOW_HIGH 1
 #define PULSE_HIGH_LOW 2
 #define PULSE_HIGH_HIGH 3
 
 struct RF433protocol rf433protocolss[] = {
-    { {9900 , 1000}, {2675, 180}, {275, 180}, {1225, 180}, PULSE_LOW_LOW, PULSE_LOW_HIGH, true },
-    { {5700 , 50}, {0, 0}, {180, 100}, {551, 100}, PULSE_LOW_HIGH, PULSE_HIGH_LOW, false }
+    { {9900 , 1000}, {2675, 180}, {275, 180}, {1225, 180}, PULSE_LOW_LOW, PULSE_LOW_HIGH, 64, true },
+    { {5700 , 50}, {0, 0}, {180, 100}, {551, 100}, PULSE_LOW_HIGH, PULSE_HIGH_LOW, 0, false }
 };
 
 uint8_t rf433protocolss_count = sizeof(rf433protocolss) / sizeof(rf433protocolss[0]);
@@ -224,7 +158,8 @@ void rf433_task(void *pvParameters)
     char bits[256];
     bool low;
     bool high;  
-    uint8_t error = 0;  
+    uint8_t error = 0; 
+   uint8_t end_bit = 0; 
 
     printf("Start rf433 receiver.");
 
@@ -237,7 +172,7 @@ void rf433_task(void *pvParameters)
             unsigned long time = micros();
             unsigned int duration = time - last_time;
 
-            if (protocol_key != -1 && diff(duration, trigger, 200)) {
+            if (protocol_key != -1 && (diff(duration, trigger, 200) || (end_bit && bit > end_bit))) {
                 bits[bit] = '\0';
                 printf("End signal, should display result: %d %s\nreset.\n", bit, bits);
                 protocol_key = -1;
@@ -250,6 +185,7 @@ void rf433_task(void *pvParameters)
                     protocol = NULL;
                     bit = 0;
                     error = 0;
+                    end_bit = rf433protocolss[protocol_key].len*2;  
                     latch2 = &rf433protocolss[protocol_key].latch2;
                     // printf("--- key: %d duration: %d latch2: %d\n", protocol_key, duration, latch2->length);
                     if (!latch2->length) {

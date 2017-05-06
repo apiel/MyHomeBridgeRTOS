@@ -101,8 +101,8 @@ void rf433_action(char * request)
 #define PULSE_HIGH_HIGH 3
 
 struct RF433protocol rf433protocolss[] = {
-    { {9900 , 1000}, {2675, 180}, {275, 180}, {1225, 180}, PULSE_LOW_LOW, PULSE_LOW_HIGH, 64, true },
-    { {5700 , 50}, {0, 0}, {180, 100}, {551, 100}, PULSE_LOW_HIGH, PULSE_HIGH_LOW, 0, false }
+    { {9900 , 1000}, {2675, 180}, {275, 180}, {1225, 180}, PULSE_LOW_LOW, PULSE_LOW_HIGH, true },
+    { {5700 , 50}, {0, 0}, {180, 100}, {551, 100}, PULSE_LOW_HIGH, PULSE_HIGH_LOW, false }
 };
 
 uint8_t rf433protocolss_count = sizeof(rf433protocolss) / sizeof(rf433protocolss[0]);
@@ -115,6 +115,28 @@ unsigned long micros()
 {
     return xthal_get_ccount() / sdk_system_get_cpu_freq();
 }
+
+// unsigned long bin2int(const char *bin) 
+// {
+//     unsigned long dec = 0;
+//     while (*bin != '\0') {
+//         dec *= 2;
+//         if (*bin == '1') dec += 1;
+//         bin++;
+//     }
+//     printf("bin2int: %lu\n", dec);
+//     return dec;
+// }
+
+// void int2bin(unsigned long dec)
+// {
+//     char bits[256];
+//     for (int i = 0; dec; i++) {
+//         bits[i] = dec%2 ? '1' : '0';
+//         dec/=2;
+//     }
+//     printf("int2bin: %s\n", bits);
+// }
 
 bool is_valid(char aa, char bb, uint8_t cmp) {
     uint8_t a = aa == 49; // 49 is '1'
@@ -159,7 +181,6 @@ void rf433_task(void *pvParameters)
     bool low;
     bool high;  
     uint8_t error = 0; 
-   uint8_t end_bit = 0; 
 
     printf("Start rf433 receiver.");
 
@@ -172,9 +193,10 @@ void rf433_task(void *pvParameters)
             unsigned long time = micros();
             unsigned int duration = time - last_time;
 
-            if (protocol_key != -1 && (diff(duration, trigger, 200) || (end_bit && bit > end_bit))) {
+            if (protocol_key != -1 && diff(duration, trigger, 200)) {
                 bits[bit] = '\0';
                 printf("End signal, should display result: %d %s\nreset.\n", bit, bits);
+                // int2bin(bin2int(bits));
                 protocol_key = -1;
             }
 
@@ -184,8 +206,7 @@ void rf433_task(void *pvParameters)
                     trigger = duration;
                     protocol = NULL;
                     bit = 0;
-                    error = 0;
-                    end_bit = rf433protocolss[protocol_key].len*2;  
+                    error = 0; 
                     latch2 = &rf433protocolss[protocol_key].latch2;
                     // printf("--- key: %d duration: %d latch2: %d\n", protocol_key, duration, latch2->length);
                     if (!latch2->length) {

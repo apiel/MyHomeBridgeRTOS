@@ -22,14 +22,14 @@ void user_init(void)
   printf("SDK version:%s\n", sdk_system_get_sdk_version());
   printf("MyHomeBridge version:%s\n", VERSION);
 
-  wifi_init(); 
-  // wifi_new_connection(WIFI_SSID, WIFI_PASS);
+  // wifi_init(); 
+  // // wifi_new_connection(WIFI_SSID, WIFI_PASS);
 
   rf433_init();
-  	
-  publish_queue = xQueueCreate(3, sizeof( struct MQTTMessage * ) );
-
   xTaskCreate(&rf433_task, "rf433_receiver", 1024, NULL, 1, NULL);
-  xTaskCreate(&httpd_task, "http_server", 1024, NULL, 2, NULL);
-  xTaskCreate(&mqtt_task, "mqtt_task", 1024, NULL, 4, NULL);  
+
+  // publish_queue = xQueueCreate(3, sizeof( struct MQTTMessage * ) );
+  // xTaskCreate(&mqtt_task, "mqtt_task", 1024, NULL, 4, NULL);  
+
+  // xTaskCreate(&httpd_task, "http_server", 1024, NULL, 2, NULL);
 }

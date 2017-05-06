@@ -185,7 +185,19 @@ unsigned long micros()
 bool is_valid(char aa, char bb, uint8_t cmp) {
     uint8_t a = aa == 49; // 49 is '1'
     uint8_t b = bb == 49;
-    return ((a<<b)+(a|b)) == cmp; 
+    return ((a<<b)+(a|b)) == cmp; // 0<<0=0 0<<1=0 1<<0=1 1<<1=2, if not 0<<0 add +1 -> 0|0=0 1|0=1 0|1=1 1|1=1
+}
+
+bool is_invalid_manchester_code(struct RF433protocol * protocol, uint8_t bit, char * bits) {
+    return (protocol->manchester_code 
+                 && bit % 4 == 3 
+                 && is_valid(bits[bit-3], bits[bit-2], protocol->zero) == is_valid(bits[bit-1], bits[bit], protocol->zero));
+}
+
+bool is_invalid_zero_or_one(struct RF433protocol * protocol, uint8_t bit, char * bits) {
+    return (bit % 2 == 1 
+                 && !is_valid(bits[bit-1], bits[bit], protocol->zero) 
+                 && !is_valid(bits[bit-1], bits[bit], protocol->one));
 }
 
 int rf433_get_protocol(unsigned int duration)
@@ -204,9 +216,6 @@ void rf433_task(void *pvParameters)
 {
     int previous_pin_value = gpio_read(PIN_RF433_RECEIVER);
     unsigned long last_time = micros();
-    // uint8_t repeat = 0;
-    // uint8_t pos = 0;
-    // unsigned int timings[250];
     int protocol_key = -1;
     struct Pulse * latch2;
     struct RF433protocol * protocol = NULL;
@@ -263,16 +272,9 @@ void rf433_task(void *pvParameters)
              || (high = diff(duration, protocol->high.length, protocol->high.tolerance))) {
                 bits[bit] = low ? '0' : '1';
                 // printf(":: %c %d\n", bits[bit], duration);
-                if (bit % 2 == 1 
-                 && !is_valid(bits[bit-1], bits[bit], protocol->zero) 
-                 && !is_valid(bits[bit-1], bits[bit], protocol->one)) {
-                    printf("Error invalid 0 or 1 %c%c\n", bits[bit-1], bits[bit]);
-                    protocol_key = -1;
-                }
-                else if (protocol->manchester_code 
-                 && bit % 4 == 3 
-                 && is_valid(bits[bit-3], bits[bit-2], protocol->zero) == is_valid(bits[bit-1], bits[bit], protocol->zero)) {
-                    printf("Error dont respect manchester code %c%c%c%c %d %d\n", bits[bit-3], bits[bit-2], bits[bit-1], bits[bit], is_valid(bits[bit-3], bits[bit-2], protocol->zero), is_valid(bits[bit-1], bits[bit], protocol->zero));
+                if (is_invalid_zero_or_one(protocol, bit, bits)
+                 || is_invalid_manchester_code(protocol, bit, bits)) {
+                    printf("Error invalid 0 or 1 or dont respect manchester code\n");
                     protocol_key = -1;
                 }
                 bit++;
@@ -282,31 +284,6 @@ void rf433_task(void *pvParameters)
                 protocol_key = -1;
             }
 
-
-            // // printf("pin changed %d %d", pin_value, duration);
-
-            // if (diff(duration, 5700, 200) || diff(duration, 10500, 500)) {
-            //     if (diff(duration, timings[0], 200)) {
-            //         repeat++;
-            //         pos--;
-            //         if (repeat > 1) {
-            //             printf("Signal received.\n");
-            //             for(int i = 0; i < pos; i++) {
-            //                 printf(":: %d\n", timings[i]);
-            //             }
-            //             printf("Signal end.\n");
-            //             repeat = 0;
-            //         }
-            //     }
-            //     pos = 0;
-            // }
-
-            // if (pos >= 250) { // timings[250]
-            //     pos = 0;
-            //     repeat = 0;
-            // }
-
-            // timings[pos++] = duration;
             last_time = time;                 
         }
     }

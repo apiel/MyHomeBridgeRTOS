@@ -1,20 +1,3 @@
-// #define RF433protocolCount 1
-
-struct MinMax {
-    uint16_t min;
-    uint16_t max;
-};
-
-struct RF433protocol2
-{
-    struct MinMax latch;
-    struct MinMax latch2;
-    struct MinMax low;
-    struct MinMax hight;
-    uint8_t len;
-    bool only01or10;
-};
-
 struct Pulse {
     uint16_t length;
     uint16_t tolerance;

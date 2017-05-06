@@ -6,22 +6,19 @@
 
 #include "config.h"
 #include "rf433.h"
-#include "pulse.h"
 
-// uint8_t latch_stage = 0;
-// char bits[256];
-// uint8_t bit;
-// uint8_t bit_error = 0;
-struct RF433protocol2 * current_protocol;
-int current_protocol_id;
+#define PULSE_LOW_LOW 0
+#define PULSE_LOW_HIGH 1
+#define PULSE_HIGH_LOW 2
+#define PULSE_HIGH_HIGH 3
 
-struct RF433protocol2 rf433protocols[] = {
-    // { {9500 , 11500}, {2350, 2750}, {130, 450}, {950, 1450}, 64, true },
-    { {10000 , 11000}, {2350, 2750}, {130, 450}, {950, 1450}, 64, true },
-    { {5670 , 5730}, {0, 0}, {150, 250}, {500, 610}, 24, false }
+struct RF433protocol rf433protocolss[] = {
+    { {9900 , 1000}, {2675, 180}, {275, 180}, {1225, 180}, PULSE_LOW_LOW, PULSE_LOW_HIGH, true },
+    { {5700 , 50}, {0, 0}, {180, 100}, {551, 100}, PULSE_LOW_HIGH, PULSE_HIGH_LOW, false }
 };
 
-uint8_t rf433protocols_count = sizeof(rf433protocols) / sizeof(rf433protocols[0]);
+uint8_t rf433protocols_count = sizeof(rf433protocolss) / sizeof(rf433protocolss[0]);
+
 
 void rf433_init(void)
 {
@@ -29,35 +26,26 @@ void rf433_init(void)
     printf("RF433 protocols initialise: %d\n", rf433protocols_count);
 }
 
-void rf433_pulse(uint16_t duration, uint16_t low)
+void rf433_pulse(uint16_t first, uint16_t second)
 {
-    do_pulse(PIN_RF433_EMITTER, duration, low);
-}
-
-uint16_t rf433_middle(struct MinMax minmax) 
-{
-    return (minmax.max + minmax.min)*0.5;
+    gpio_write(PIN_RF433_EMITTER, 1);
+    sdk_os_delay_us(first);
+    gpio_write(PIN_RF433_EMITTER, 0);
+    sdk_os_delay_us(second);    
 }
 
 void rf433_send(int id_protocol, char * code) 
 {
-    uint16_t low = rf433_middle(rf433protocols[id_protocol].low); 
-    uint16_t hight = rf433_middle(rf433protocols[id_protocol].hight); 
-    uint16_t latch = rf433_middle(rf433protocols[id_protocol].latch);
-    uint16_t latch2 = rf433_middle(rf433protocols[id_protocol].latch2);     
+    uint16_t low = rf433protocolss[id_protocol].low.length; 
+    uint16_t high = rf433protocolss[id_protocol].high.length; 
+    uint16_t latch = rf433protocolss[id_protocol].latch.length;
+    uint16_t latch2 = rf433protocolss[id_protocol].latch2.length;     
 
-    // printf("rf433_send protocol: %d latch: %d latch2: %d low: %d hight: %d code: %s\n", id_protocol, latch, latch2, low, hight, code);   
-
-    if (latch) rf433_pulse(latch, low);
-    if (latch2) rf433_pulse(latch2, low);
+    if (latch) rf433_pulse(low, latch);
+    if (latch2) rf433_pulse(low, latch2);
     int end = strlen(code);
-    for(int pos = 0; pos < end; pos++) {
-      if (code[pos] == '0') {
-        rf433_pulse(low, low);
-      }
-      else {
-        rf433_pulse(hight, low);
-      }
+    for(int pos = 0; pos < end; pos+=2) {
+        rf433_pulse((code[pos] == '0'?low:high), (code[pos+1] == '0'?low:high));
     }
 }
 
@@ -94,18 +82,6 @@ void rf433_action(char * request)
         printf("rf433_action invalid parameters: %s\n", request);
     }
 }
-
-#define PULSE_LOW_LOW 0
-#define PULSE_LOW_HIGH 1
-#define PULSE_HIGH_LOW 2
-#define PULSE_HIGH_HIGH 3
-
-struct RF433protocol rf433protocolss[] = {
-    { {9900 , 1000}, {2675, 180}, {275, 180}, {1225, 180}, PULSE_LOW_LOW, PULSE_LOW_HIGH, true },
-    { {5700 , 50}, {0, 0}, {180, 100}, {551, 100}, PULSE_LOW_HIGH, PULSE_HIGH_LOW, false }
-};
-
-uint8_t rf433protocolss_count = sizeof(rf433protocolss) / sizeof(rf433protocolss[0]);
 
 bool diff(long A, long B, int tolerance) {
     return abs(A - B) < tolerance;
@@ -158,7 +134,7 @@ bool is_invalid_zero_or_one(struct RF433protocol * protocol, uint8_t bit, char *
 
 int rf433_get_protocol(unsigned int duration)
 {
-    for(int i=0; i < rf433protocolss_count; i++) {
+    for(int i=0; i < rf433protocols_count; i++) {
         struct Pulse * latch = &rf433protocolss[i].latch;
         if (diff(duration, latch->length, latch->tolerance)) {
             printf("Latch on protocol %d.\n", i);
@@ -170,6 +146,9 @@ int rf433_get_protocol(unsigned int duration)
 
 void rf433_task(void *pvParameters)
 {
+    // rf433_send_multi(0, "010001000100000101000100010000010001010001000100000101000001010001000100000101000001010001000001010000010001010001000100010001000");
+    rf433_send_multi(1, "0101010101100110010101100110011010100101010110100");
+    gpio_enable(PIN_RF433_RECEIVER, GPIO_INPUT);
     int previous_pin_value = gpio_read(PIN_RF433_RECEIVER);
     unsigned long last_time = micros();
     int protocol_key = -1;

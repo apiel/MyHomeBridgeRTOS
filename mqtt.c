@@ -17,7 +17,7 @@ static void  topic_received(mqtt_message_data_t *md)
     msg[md->message->payloadlen] = '\0';
     
     char * topic = strrchr(md->topic->lenstring.data, '/') + 1;
-    printf("Msg received on topic: %s\n%s\n\n", topic, msg);    // , (char *)md->message->payload
+    printf("Msg received on topic: %s\nMsg: %s\n\n", topic, msg);    // , (char *)md->message->payload
 
     if (strcmp(topic, "rf433") == 0) {
         rf433_action(msg);
@@ -133,13 +133,13 @@ void  mqtt_task(void *pvParameters)
 
             while(xQueueReceive(publish_queue, &( pxMessage ), ( TickType_t ) 0) ==
                   pdTRUE){
-                printf("got message to publish\r\n");
                 mqtt_message_t message;
                 message.payload = pxMessage->msg;
                 message.payloadlen = strlen(pxMessage->msg);
                 message.dup = 0;
                 message.qos = MQTT_QOS1;
                 message.retained = 1;
+                printf("got message to publish %s: %s\r\n", pxMessage->topic, pxMessage->msg);
                 ret = mqtt_publish(&client, pxMessage->topic, &message);
                 if (ret != MQTT_SUCCESS ){
                     printf("error while publishing message: %d\n", ret );

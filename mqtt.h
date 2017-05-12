@@ -7,7 +7,7 @@ QueueHandle_t publish_queue;
 struct MQTTMessage
 {
     char topic[128];
-    char msg[128];
+    char msg[256];
  } mqttMessage;
 
 void  mqtt_task(void *pvParameters);

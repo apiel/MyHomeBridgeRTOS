@@ -63,12 +63,12 @@ void rf433_send_multi(int id_protocol, char * code)
     rf433_send(id_protocol, code);    
 }
 
-// on1: 0 1010100110101001011010100110011010100110011010011001011010101010
-
 void rf433_action(char * request)
 {
     char * id_protocol_str = strtok(request, " ");
     char * code = strtok(NULL, " ");
+
+    // rf433_send_multi(0, "010001000100000101000100010000010001010001000100000101000001010001000100000101000001010001000001010000010001010001000100010001000");
 
     if (id_protocol_str && code) {
         int id_protocol = atoi(id_protocol_str);
@@ -137,7 +137,7 @@ int rf433_get_protocol(unsigned int duration)
     for(int i=0; i < rf433protocols_count; i++) {
         struct Pulse * latch = &rf433protocolss[i].latch;
         if (diff(duration, latch->length, latch->tolerance)) {
-            printf("Latch on protocol %d.\n", i);
+            // printf("Latch on protocol %d.\n", i);
             return i;
         }
     }
@@ -147,7 +147,7 @@ int rf433_get_protocol(unsigned int duration)
 void rf433_task(void *pvParameters)
 {
     // rf433_send_multi(0, "010001000100000101000100010000010001010001000100000101000001010001000100000101000001010001000001010000010001010001000100010001000");
-    rf433_send_multi(1, "0101010101100110010101100110011010100101010110100");
+    // rf433_send_multi(1, "0101010101100110010101100110011010100101010110100");
     gpio_enable(PIN_RF433_RECEIVER, GPIO_INPUT);
     int previous_pin_value = gpio_read(PIN_RF433_RECEIVER);
     unsigned long last_time = micros();
@@ -171,6 +171,7 @@ void rf433_task(void *pvParameters)
             previous_pin_value = pin_value;
             unsigned long time = micros();
             unsigned int duration = time - last_time;
+            // printf("%d\n", duration);
 
             if (protocol_key != -1 && diff(duration, trigger, 200)) {
                 bits[bit] = '\0';
@@ -189,18 +190,18 @@ void rf433_task(void *pvParameters)
                     latch2 = &rf433protocolss[protocol_key].latch2;
                     // printf("--- key: %d duration: %d latch2: %d\n", protocol_key, duration, latch2->length);
                     if (!latch2->length) {
-                        printf("No latch 2\n");
+                        // printf("No latch 2\n");
                         protocol = &rf433protocolss[protocol_key];
                     }
                 }
             }
             else if (!protocol) {
                 if (diff(duration, latch2->length, latch2->tolerance)) {
-                    printf("Latch 2 detected\n");
+                    // printf("Latch 2 detected\n");
                     protocol = &rf433protocolss[protocol_key];
                 }
                 else if (error++ > 0) {
-                    printf("Error latch 2 %d\n", duration);
+                    // printf("Error latch 2 %d\n", duration);
                     protocol_key = -1;
                 }
             }

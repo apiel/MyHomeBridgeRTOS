@@ -18,6 +18,9 @@
 #define PIN_RF433_RECEIVER 5 // wemos d1
 // #define PIN_DHT 12 // wemos d6
 #define PIN_DHT 4 // wemos d2
-#define PIN_PIR 0 // wemos d3
+// #define PIN_DHT 2 // wemos d4
+// #define PIN_DHT 0 // wemos d3
+// #define PIN_PIR 0 // wemos d3
+#define PIN_PIR 14 // wemos d5
 
 #define DHT_TYPE DHT_TYPE_DHT22

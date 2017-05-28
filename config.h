@@ -14,17 +14,22 @@
 #define MQTT_USER NULL
 #define MQTT_PASS NULL
 
-#define PIN_RF433_EMITTER 15 // wemos d8
+#define PIN_RF433_EMITTER 4 // wemos d2  // bug on boot
+// #define PIN_RF433_EMITTER 0 // wemos d3  // bug on boot
+// #define PIN_RF433_EMITTER 2 // wemos d4 // bug on boot
+// #define PIN_RF433_EMITTER 15 // wemos d8
 // #define PIN_RF433_RECEIVER 5 // wemos d1
 #define PIN_RF433_RECEIVER 12 // wemos d6
 // #define PIN_RF433_RECEIVER 4 // wemos d2
 // #define PIN_DHT 12 // wemos d6
+#define PIN_DHT 5 // wemos d1
 // #define PIN_DHT 4 // wemos d2
 // #define PIN_DHT 2 // wemos d4
-#define PIN_DHT 0 // wemos d3
+// #define PIN_DHT 0 // wemos d3
 // #define PIN_PIR 0 // wemos d3
 // #define PIN_PIR 14 // wemos d5
 #define PIN_PIR 4 // wemos d2
 // #define PIN_PIR 5 // wemos d1
 
-#define DHT_TYPE DHT_TYPE_DHT22
+// #define DHT_TYPE DHT_TYPE_DHT22
+#define DHT_TYPE DHT_TYPE_DHT11

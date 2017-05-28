@@ -25,8 +25,9 @@ void user_init(void)
   printf("SDK version:%s\n", sdk_system_get_sdk_version());
   printf("MyHomeBridge version:%s\n", VERSION);
 
+  // // wifi_off();
   wifi_init(); 
-  // wifi_new_connection(WIFI_SSID, WIFI_PASS);
+  // // wifi_new_connection(WIFI_SSID, WIFI_PASS);
 
   rf433_init();
   xTaskCreate(&rf433_task, "rf433_receiver", 1024, NULL, 1, NULL);
@@ -36,6 +37,6 @@ void user_init(void)
 
   xTaskCreate(&httpd_task, "http_server", 1024, NULL, 2, NULL);
   xTaskCreate(&dht_task, "dht_task", 1024, NULL, 5, NULL);
-  xTaskCreate(&pir_task, "pir_task", 1024, NULL, 5, NULL);
+  // xTaskCreate(&pir_task, "pir_task", 1024, NULL, 5, NULL);
   xTaskCreate(&photoresistor_task, "photoresistor_task", 1024, NULL, 5, NULL);
 }

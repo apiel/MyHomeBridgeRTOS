@@ -1,5 +1,6 @@
 #include <string.h>
 
+#include <esplibs/libnet80211.h> // wifi off
 #include <espressif/esp_common.h>
 #include <dhcpserver.h>
 
@@ -8,6 +9,13 @@
 
 // We should deactivate sofap after connection to wifi
 // Use MAC address to generate SoftAP SSID
+
+void wifi_off(void)
+{
+    sdk_wifi_station_stop();
+    sdk_wifi_softap_stop();
+    // sdk_system_deep_sleep(99999999999999);
+}
 
 void wifi_init(void)
 {

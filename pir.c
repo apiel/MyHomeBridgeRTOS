@@ -22,6 +22,7 @@ void pir_task(void *pvParameters)
 
     while(1) {
         int pir_value = gpio_read(PIN_PIR);
+        // printf("Pir val %d\n", pir_value);
         if (pir_value != prev_pir_value) {
             prev_pir_value = pir_value;
             printf("Pir changed %d\n", pir_value);

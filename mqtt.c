@@ -8,7 +8,7 @@
 #include "wifi.h"
 #include "config.h"
 #include "mqtt.h"
-#include "rf433.h"
+#include "action.h"
 
 static void  topic_received(mqtt_message_data_t *md)
 {
@@ -19,40 +19,10 @@ static void  topic_received(mqtt_message_data_t *md)
     char * topic = strrchr(md->topic->lenstring.data, '/') + 1;
     printf("Msg received on topic: %s\nMsg: %s\n\n", topic, msg);    // , (char *)md->message->payload
 
-    if (strcmp(topic, "rf433") == 0) {
-        rf433_action(msg);
-    }
-    else {
-        printf("This topic is not supported.\n");
-    }
+    reducer(topic, msg);
 
     free(msg);
 }
-
-// void get_topics(char * mqtt_client_id, char * topic1, char * topic2, char * topic3)
-// {
-//     // alex/garage/MHB_18FE34CC3DC0/+
-//     // alex/garage/-/+
-//     // alex/-/-/+
-
-//     topic1 = malloc(strlen(MHB_USER)+strlen(MHB_ZONE)+strlen(mqtt_client_id)+4*sizeof(char));
-//     strcpy(topic1, MHB_USER);
-//     strcat(topic1, "/");
-//     strcat(topic1, MHB_ZONE);    
-//     strcat(topic1, "/");
-//     strcat(topic1, mqtt_client_id);
-//     strcat(topic1, "/+");
-
-//     topic2 = malloc(strlen(MHB_USER)+strlen(MHB_ZONE)+5*sizeof(char));
-//     strcpy(topic2, MHB_USER);
-//     strcat(topic2, "/");
-//     strcat(topic2, MHB_ZONE);
-//     strcat(topic2, "/-/+");    
-
-//     topic3 = malloc(strlen(MHB_USER)+6*sizeof(char));
-//     strcpy(topic3, MHB_USER);
-//     strcat(topic3, "/-/-/+");  
-// }
 
 void  mqtt_task(void *pvParameters)
 {
@@ -71,7 +41,7 @@ void  mqtt_task(void *pvParameters)
     strcpy(mqtt_client_id, get_uid());
 
     char * topic1 = 0, * topic2 = 0, * topic3 = 0;
-    // get_topics(mqtt_client_id, topic1, topic2, topic3); 
+    // let s keep topic1 to publish msg
     topic1 = malloc(strlen(MHB_USER)+strlen(MHB_ZONE)+strlen(mqtt_client_id)+4*sizeof(char));
     strcpy(topic1, MHB_USER);
     strcat(topic1, "/");
@@ -88,7 +58,9 @@ void  mqtt_task(void *pvParameters)
 
     topic3 = malloc(strlen(MHB_USER)+6*sizeof(char));
     strcpy(topic3, MHB_USER);
-    strcat(topic3, "/-/-/+");     
+    strcat(topic3, "/-/-/+");  
+
+    // just need to subscribe to MHB_USER/+
 
     while(1) {
         // xSemaphoreTake(wifi_alive, portMAX_DELAY);
@@ -99,6 +71,7 @@ void  mqtt_task(void *pvParameters)
         if( ret ){
             printf("error: %d\n\r", ret);
             taskYIELD();
+            vTaskDelay(1000 / portTICK_PERIOD_MS); // 1 sec
             continue;
         }
         printf("done\n\r");

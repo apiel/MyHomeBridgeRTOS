@@ -18,12 +18,15 @@
 #include "dht.h"
 #include "pir.h"
 #include "photoresistor.h"
+#include "action.h"
 
 void user_init(void)
 {
   uart_set_baud(0, 115200);
   printf("SDK version:%s\n", sdk_system_get_sdk_version());
   printf("MyHomeBridge version:%s\n", VERSION);
+
+  test();
 
   // // wifi_off();
   wifi_init(); 

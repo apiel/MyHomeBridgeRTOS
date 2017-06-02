@@ -3,6 +3,7 @@
 #include <espressif/esp_common.h>
 
 #include "wifi.h"
+#include "action.h"
 
 inline int ishex(int x)
 {
@@ -34,7 +35,8 @@ int decode(const char *s, char *dec)
 char * get_from_uri(char * str, int start, int end, char * ret) 
 {
     char *str_start, *str_end;
-    str_start = strchr(str, start)+1;
+    if (start > 0) str_start = strchr(str, start)+1;
+    else str_start = str;
     str_end = strchr(str_start, end);
     int len = str_end - str_start;
     // if (len > strlen(ret)) len = strlen(ret);  // it could be out of memory?
@@ -42,6 +44,13 @@ char * get_from_uri(char * str, int start, int end, char * ret)
     ret[len] = '\0'; 
 
     return str_end;
+}
+
+void char_replace(char * str, char search, char replace)
+{
+    for(int pos = strlen(str); pos > 0; pos--) {
+        if (str[pos] == search) str[pos] = replace;
+    }
 }
 
 void parse_request(void *data)
@@ -52,7 +61,14 @@ void parse_request(void *data)
         get_from_uri(data, '/', ' ', uri);
         printf("uri: %s\n", uri);
 
-        if (strchr(uri, '?')) {
+        if (strchr(uri, '/')) {
+            char action[32];
+            char * next = get_from_uri(uri, 0, '/', action) + 1;
+            char_replace(next, '/', ' ');
+            printf("::::::action: %s :param: %s\n\n", action, next);
+            reducer(action, next);
+        }
+        else if (strchr(uri, '?')) {
             char ssid[32], password[64];
             char * next = get_from_uri(uri, '=', '&', ssid);
             // printf(":ssid: %s :next: %s\n", ssid, next);

@@ -4,6 +4,7 @@
 
 #include "wifi.h"
 #include "action.h"
+#include "utils.h"
 
 inline int ishex(int x)
 {
@@ -32,47 +33,26 @@ int decode(const char *s, char *dec)
 	return o - dec;
 }
 
-char * get_from_uri(char * str, int start, int end, char * ret) 
-{
-    char *str_start, *str_end;
-    if (start > 0) str_start = strchr(str, start)+1;
-    else str_start = str;
-    str_end = strchr(str_start, end);
-    int len = str_end - str_start;
-    // if (len > strlen(ret)) len = strlen(ret);  // it could be out of memory?
-    memcpy(ret, str_start, len);
-    ret[len] = '\0'; 
-
-    return str_end;
-}
-
-void char_replace(char * str, char search, char replace)
-{
-    for(int pos = strlen(str); pos > 0; pos--) {
-        if (str[pos] == search) str[pos] = replace;
-    }
-}
-
 void parse_request(void *data)
 {
     // printf("Received data:\n%s\n", (char*) data);
     if (!strncmp(data, "GET ", 4)) {
         char uri[128];
-        get_from_uri(data, '/', ' ', uri);
+        str_extract(data, '/', ' ', uri);
         printf("uri: %s\n", uri);
 
         if (strchr(uri, '/')) {
             char action[32];
-            char * next = get_from_uri(uri, 0, '/', action) + 1;
+            char * next = str_extract(uri, 0, '/', action) + 1;
             char_replace(next, '/', ' ');
             printf("::::::action: %s :param: %s\n\n", action, next);
             reducer(action, next);
         }
         else if (strchr(uri, '?')) {
             char ssid[32], password[64];
-            char * next = get_from_uri(uri, '=', '&', ssid);
+            char * next = str_extract(uri, '=', '&', ssid);
             // printf(":ssid: %s :next: %s\n", ssid, next);
-            get_from_uri(next, '=', '\0', password);
+            str_extract(next, '=', '\0', password);
             // printf(":ssid: %s :pwd: %s\n\n", ssid, password);
 
             char ssid2[32], password2[64];

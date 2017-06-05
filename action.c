@@ -9,6 +9,39 @@
 #include <esp_spiffs.h>
 
 #include "rf433.h"
+#include "utils.h"
+
+void reducer(char * action, char * params);
+
+void read_actions(char * name)
+{
+    const int max_size = 1024;
+    char buf[max_size];
+    uint8_t c[1];
+    int pos = 0;
+    char action[32];
+    char path[128] = "actions_";
+    strcat(path, name);
+
+    spiffs_file fd = SPIFFS_open(&fs, path, SPIFFS_RDONLY, 0);
+    if (fd < 0) {
+        printf("---------spiff2 Error opening file %s\n", path);
+        return;
+    }
+
+    while (SPIFFS_read(&fs, fd, c, 1)) {
+        if (c[0] == '\n' || SPIFFS_eof(&fs, fd)) {
+            buf[pos] = '\0'; 
+            printf("-------------- line: %s\n", buf);
+            char * next = str_extract(buf, 0, ' ', action) + 1;
+            printf("--------::::::action: %s :param: %s\n\n", action, next);
+            reducer(action, next);
+            pos = 0;
+            if (SPIFFS_eof(&fs, fd)) break;
+        }
+        else buf[pos++] = c[0];
+    }
+}
 
 // this could be call from an internal queue
 void reducer(char * action, char * params)
@@ -16,6 +49,9 @@ void reducer(char * action, char * params)
     if (strcmp(action, "rf433") == 0) {
         rf433_action(params);
     }
+    else if (strcmp(action, "actions") == 0) {
+        read_actions(params);
+    }    
     else if (strcmp(action, "#") == 0) {
         printf("-> %s\n", params);
     }    
@@ -24,74 +60,7 @@ void reducer(char * action, char * params)
     }
 }
 
-static void example_read_file_spiffs2()
-{
-    const int buf_size = 0xFF;
-    uint8_t buf[buf_size];
-
-    spiffs_file fd = SPIFFS_open(&fs, "actions_off", SPIFFS_RDONLY, 0);
-    if (fd < 0) {
-        printf("\n\n\n---------spiff2 Error opening file\n\n\n");
-        return;
-    }
-
-    int read_bytes = SPIFFS_read(&fs, fd, buf, buf_size);
-    printf("\n\n-------spiff2 Read %d bytes\n\n\n", read_bytes);
-
-    buf[read_bytes] = '\0';    // zero terminate string
-    printf("\n\n-------------- Data spiff2: %s\n\n\n", buf);
-
-    SPIFFS_close(&fs, fd);
-}
-
-static void example_read_file_spiffs()
-{
-    const int buf_size = 0xFF;
-    uint8_t buf[buf_size];
-
-    spiffs_file fd = SPIFFS_open(&fs, "other.txt", SPIFFS_RDONLY, 0);
-    if (fd < 0) {
-        printf("Error opening file\n");
-        return;
-    }
-
-    int read_bytes = SPIFFS_read(&fs, fd, buf, buf_size);
-    printf("Read %d bytes\n", read_bytes);
-
-    buf[read_bytes] = '\0';    // zero terminate string
-    printf("Data: %s\n", buf);
-
-    SPIFFS_close(&fs, fd);
-}
-
-static void example_write_file()
-{
-    uint8_t buf[] = "Example data, written by ESP8266";
-
-    int fd = open("other.txt", O_WRONLY|O_CREAT, 0);
-    if (fd < 0) {
-        printf("Error opening file\n");
-        return;
-    }
-
-    int written = write(fd, buf, sizeof(buf));
-    printf("Written %d bytes\n", written);
-
-    close(fd);
-}
-
-static void example_fs_info()
-{
-    uint32_t total, used;
-    SPIFFS_info(&fs, &total, &used);
-    printf("Total: %d bytes, used: %d bytes", total, used);
-}
-
-
-
-
-
-void test()
+void action_init()
 {
 #if SPIFFS_SINGLETON == 1
     esp_spiffs_init();
@@ -104,9 +73,5 @@ void test()
         printf("Error mount SPIFFS\n");
     }
 
-    example_fs_info();
-    example_read_file_spiffs2();
-    example_write_file();
-    example_read_file_spiffs();
-    example_fs_info();    
+    // read_action();
 }

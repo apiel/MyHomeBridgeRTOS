@@ -8,7 +8,10 @@
 #define AP_PSK "myhomebridge" // between 8 and 63 ASCII-encoded characters
 
 
-#define MQTT_HOST ("192.168.0.13")
+// #define MQTT_HOST ("192.168.0.13")
+// #define MQTT_HOST ("51.254.38.158")
+#define MQTT_HOST ("vps.alexparadise.com")
+// #define MQTT_HOST ("test.mosquitto.org")
 #define MQTT_PORT 1883
 
 #define MQTT_USER NULL

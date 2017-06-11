@@ -27,7 +27,7 @@ void user_init(void)
   printf("MyHomeBridge version:%s\n", VERSION);
 
   wifi_init(); 
-  // // wifi_new_connection(WIFI_SSID, WIFI_PASS);
+  ////// wifi_new_connection(WIFI_SSID, WIFI_PASS);
 
   action_init();
 
@@ -39,6 +39,6 @@ void user_init(void)
 
   xTaskCreate(&httpd_task, "http_server", 1024, NULL, 2, NULL);
   xTaskCreate(&dht_task, "dht_task", 1024, NULL, 5, NULL);
-  // xTaskCreate(&pir_task, "pir_task", 1024, NULL, 5, NULL);
+  ////// xTaskCreate(&pir_task, "pir_task", 1024, NULL, 5, NULL);
   xTaskCreate(&photoresistor_task, "photoresistor_task", 1024, NULL, 5, NULL);  
 }

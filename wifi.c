@@ -19,10 +19,13 @@ void wifi_off(void)
 
 void wifi_init(void)
 {
-  sdk_wifi_set_opmode(STATIONAP_MODE); 
+//   sdk_wifi_set_opmode(STATIONAP_MODE);
+  sdk_wifi_set_opmode(STATION_MODE); 
 
   wifi_connect();
-  wifi_access_point();
+  
+  // sdk_wifi_set_opmode(SOFTAP_MODE); 
+  // wifi_access_point();
 }
 
 void wifi_new_connection(char * ssid, char * password)

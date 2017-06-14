@@ -10,6 +10,7 @@
 
 #include "rf433.h"
 #include "utils.h"
+#include "wget.h"
 
 struct Actions_definition
 {
@@ -66,6 +67,7 @@ void load_actions_file(char * path)
     char action[32];
     struct Actions * actions;
     size_t index_action;
+    size_t size;
 
     spiffs_file fd = SPIFFS_open(&fs, path, SPIFFS_RDONLY, 0);
     if (fd < 0) {
@@ -73,7 +75,8 @@ void load_actions_file(char * path)
         return;
     }
 
-    actions = malloc(sizeof(struct Actions));
+    size = sizeof(struct Actions);
+    actions = malloc(size);
     actions->size = 0;
     actions->count = 0;
     // we could remove actions_ from the name // maybe with path+=8;
@@ -101,6 +104,10 @@ void load_actions_file(char * path)
         }
         else buf[pos++] = c[0];
     }
+
+    actions_db.size += size;
+    actions_db.list = (struct Actions *)realloc(actions_db.list, actions_db.size);
+    actions_db.list[actions_db.count++] = *actions;
 }
 
 void load_actions()
@@ -119,6 +126,31 @@ void load_actions()
     }
   }
   SPIFFS_closedir(&d);    
+}
+
+void run_actions(char * name)
+{
+    int i = 0;
+    int ii = 0;
+    char * next;
+    char action[32];
+    char cmp_name[40];
+    char exec[1024];
+    strcpy(cmp_name, "actions_");
+    strcat(cmp_name, name);
+    for (; i < actions_db.count; i++) {
+        if (strcmp(actions_db.list[i].name, cmp_name) == 0) {
+            printf("--- found actions %s\n", name);
+            for (; ii < actions_db.list[i].count; ii++) {
+                printf("---> action %d\n", actions_db.list[i].list[ii]);
+                strcpy(exec, actions_def.list[actions_db.list[i].list[ii]]);
+                printf("-----> exec %s\n", exec);
+                next = str_extract(exec, 0, ' ', action) + 1;
+                printf("--------::::::action: %s :param: %s\n\n", action, next);
+                reducer(action, next);                
+            }
+        }
+    } 
 }
 
 void read_actions(char * name)
@@ -158,7 +190,11 @@ void reducer(char * action, char * params)
         rf433_action(params);
     }
     else if (strcmp(action, "actions") == 0) {
-        read_actions(params);
+        // read_actions(params);
+        run_actions(params);
+    }    
+    else if (strcmp(action, "wget") == 0) {
+        wget(params);
     }    
     else if (strcmp(action, "#") == 0) {
         printf("-> %s\n", params);

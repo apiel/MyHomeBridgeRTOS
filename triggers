@@ -1,0 +1,22 @@
+if /alex/-/-/temperature < 15
+if /alex/-/-/heating is off
+if /alex/-/-/var/alex is home
+do # we should start the heating
+
+if /alex/-/-/temperature < 15
+if /alex/-/-/heating is off
+if /alex/-/-/var/alex is soon_at_home
+do # we should start the heating
+
+if /alex/-/-/humidity > 60
+if /alex/-/-/vmc is off
+do # we should start vmc
+
+if /alex/-/-/humidity < 60
+if /alex/-/-/vmc is on
+do # we should stop vmc
+
+if /alex/-/-/var/sunset is now
+if /alex/-/-/store is open
+do /alex/-/-/set/sunset done
+do /alex/-/-/store close

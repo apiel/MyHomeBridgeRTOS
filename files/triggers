@@ -1,0 +1,9 @@
+if /alex/-/-/photoresistor < 400
+if /alex/-/-/var/helo is off
+do /alex/-/-/set/helo on
+do # helo is now on
+
+if /alex/-/-/photoresistor > 400
+if /alex/-/-/var/helo is on
+do /alex/-/-/set/helo off
+do # helo is now off

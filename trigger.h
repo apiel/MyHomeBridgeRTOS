@@ -1,0 +1,2 @@
+
+void trigger_init();

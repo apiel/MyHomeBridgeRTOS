@@ -7,12 +7,52 @@
 
 #include "utils.h"
 
+struct Variable
+{
+    char * name;
+    char value[256];
+};
+
+struct Variables
+{
+    struct Variable ** list;
+    size_t count;
+    size_t size;
+} variables;
+
 struct Triggers
 {
     char ** list;
     size_t count;
     size_t size;
 } triggers;
+
+int search_variable(char * action) {
+    int index = 0;
+    for (; index < variables.count; index++) {
+        if (strcmp(variables.list[index]->name, action) == 0) {
+            return index;
+        }
+    }
+    return -1;
+}
+
+void watch_action(char * action) {
+    printf("watch action: %s\n", action);
+
+    if (search_variable(action) == -1) {
+        printf("Variable not in list, insert it\n");
+        size_t size = sizeof(struct Variable);
+        struct Variable * variable = malloc(size);
+        variable->name = malloc(strlen(action) * sizeof(char));
+        strcpy(variable->name, action);
+        // maybe we should put a default value
+
+        variables.size += size;
+        variables.list = (struct Variable **)realloc(variables.list, variables.size);
+        variables.list[variables.count++] = variable;
+    }
+}
 
 size_t insert_trigger(char * action) {
     size_t size = strlen(action) * sizeof(char);
@@ -44,7 +84,7 @@ void load_triggers()
     int pos = 0;
     char type[2];
     char action[32];
-    bool is_first_trigger = true;
+    bool is_first_condition = true;
 
     spiffs_file fd = SPIFFS_open(&fs, "triggers", SPIFFS_RDONLY, 0);
     if (fd < 0) {
@@ -58,25 +98,21 @@ void load_triggers()
             buf[pos] = '\0';             
             printf("trigger line (%d): %s\n", pos, buf);
             if (pos == 0) {
-                is_first_trigger = true;
+                is_first_condition = true;
                 printf("got 2 \\n, set is first trigger to true\n");
             } else {
-                pos = 0;   
-                if (is_first_trigger == true) {             
-                    char * next = str_extract(buf, 0, ' ', type) + 1;
-                    printf("trigger type: %s\n", type);
-                    if (strcmp(type, "if") == 0) {
-                        is_first_trigger = false;
-                        printf("next: %s\n", next);
-                        str_extract(next, 0, ' ', action);
-                        printf("need to insert action: %s\n", action);
-                        if (search_trigger(action) == -1) {
-                            printf("-------- action not in list, insert.\n");
-                            insert_trigger(action);
-                        }                        
-                    } else if (strcmp(type, "do") == 0) {
-                        is_first_trigger = false;
-                    }
+                pos = 0; 
+                char * next = str_extract(buf, 0, ' ', type) + 1;
+                printf("trigger type: %s\n", type);
+                if (strcmp(type, "if") == 0) {
+                    printf("next: %s\n", next);
+                    str_extract(next, 0, ' ', action);
+                    if (is_first_condition == true && search_trigger(action) == -1) {
+                        printf("-------- action not in list, insert.\n");
+                        insert_trigger(action);
+                    }                        
+                    is_first_condition = false;
+                    watch_action(action);
                 }
             }
             if (SPIFFS_eof(&fs, fd)) break;
@@ -91,6 +127,9 @@ void trigger_init()
 {
     triggers.count = 0;
     triggers.size = 0;
+
+    variables.count = 0;
+    variables.size = 0;
 
     load_triggers();
 }

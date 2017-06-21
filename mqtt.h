@@ -11,3 +11,4 @@ struct MQTTMessage
  } mqttMessage;
 
 void  mqtt_task(void *pvParameters);
+void mqtt_init();

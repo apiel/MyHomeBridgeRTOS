@@ -10,6 +10,88 @@
 #include "mqtt.h"
 #include "action.h"
 
+mqtt_client_t client = mqtt_client_default;
+char mqtt_client_id[20];
+
+struct Topics
+{
+    char ** list;
+    size_t count;
+    size_t size;
+} topics;
+
+bool is_topic_already_inserted(char * topic) {
+    int index = 0;
+    for (; index < topics.count; index++) {
+        char * topicCmp = topics.list[index];
+        size_t len = strlen(topicCmp);
+        if (topicCmp[len-1] == '+') {
+            len--;
+            topicCmp = malloc(len * sizeof(char));
+            memcpy(topicCmp, topics.list[index], len);
+            topicCmp[len] = '\0';
+
+            char * found = strstr(topic, topicCmp);
+            if (found && (topic - found) == 0) {
+                // printf("Topic to compare A: %s %s %d\n", topicCmp, found, topic - found);            
+                return true;
+            }
+        } 
+        else {
+            printf("Topic to compare B: %s\n", topicCmp);
+        }
+    }
+
+    return false;
+}
+
+void insert_topic(char * topic) {
+    if (!is_topic_already_inserted(topic)) {
+        printf("Insert topic: %s\n", topic);
+        size_t size = strlen(topic) * sizeof(char);
+        char * _topic = malloc(size);
+        strcpy(_topic, topic);
+
+        topics.size += size;
+        topics.list = (char **)realloc(topics.list, topics.size);
+        topics.list[topics.count++] = _topic;
+    }
+}
+
+void mqtt_init() 
+{
+    topics.count = 0;
+    topics.size = 0;
+
+    memset(mqtt_client_id, 0, sizeof(mqtt_client_id));
+    strcpy(mqtt_client_id, get_uid());    
+
+    char * topic;
+    topic = malloc(strlen(MHB_USER)+strlen(MHB_ZONE)+strlen(mqtt_client_id)+4*sizeof(char));
+    strcpy(topic, MHB_USER);
+    strcat(topic, "/");
+    strcat(topic, MHB_ZONE);    
+    strcat(topic, "/");
+    strcat(topic, mqtt_client_id);
+    strcat(topic, "/+");
+    insert_topic(topic);
+    free(topic);
+
+    topic = malloc(strlen(MHB_USER)+strlen(MHB_ZONE)+5*sizeof(char));
+    strcpy(topic, MHB_USER);
+    strcat(topic, "/");
+    strcat(topic, MHB_ZONE);
+    strcat(topic, "/-/+");
+    insert_topic(topic);
+    free(topic);
+
+    topic = malloc(strlen(MHB_USER)+6*sizeof(char));
+    strcpy(topic, MHB_USER);
+    strcat(topic, "/-/-/+");
+    insert_topic(topic);
+    free(topic);
+}
+
 static void  topic_received(mqtt_message_data_t *md)
 {
     char * msg = malloc(md->message->payloadlen*sizeof(char));
@@ -24,12 +106,18 @@ static void  topic_received(mqtt_message_data_t *md)
     free(msg);
 }
 
+void subscribe_to_topics() {
+    int index = 0;
+    for (; index < topics.count; index++) {
+        printf("Subscribe to topic: %s\n", topics.list[index]);
+        mqtt_subscribe(&client, topics.list[index], MQTT_QOS1, topic_received);
+    }
+}
+
 void  mqtt_task(void *pvParameters)
 {
-    int ret         = 0;
+    int ret = 0;
     struct mqtt_network network;
-    mqtt_client_t client   = mqtt_client_default;
-    char mqtt_client_id[20];
     uint8_t mqtt_buf[100];
     uint8_t mqtt_readbuf[100];
     mqtt_packet_connect_data_t data = mqtt_packet_connect_data_initializer;
@@ -37,30 +125,6 @@ void  mqtt_task(void *pvParameters)
     struct MQTTMessage *pxMessage;
 
     mqtt_network_new( &network );
-    memset(mqtt_client_id, 0, sizeof(mqtt_client_id));
-    strcpy(mqtt_client_id, get_uid());
-
-    char * topic1 = 0, * topic2 = 0, * topic3 = 0;
-    // let s keep topic1 to publish msg
-    topic1 = malloc(strlen(MHB_USER)+strlen(MHB_ZONE)+strlen(mqtt_client_id)+4*sizeof(char));
-    strcpy(topic1, MHB_USER);
-    strcat(topic1, "/");
-    strcat(topic1, MHB_ZONE);    
-    strcat(topic1, "/");
-    strcat(topic1, mqtt_client_id);
-    strcat(topic1, "/+");
-
-    topic2 = malloc(strlen(MHB_USER)+strlen(MHB_ZONE)+5*sizeof(char));
-    strcpy(topic2, MHB_USER);
-    strcat(topic2, "/");
-    strcat(topic2, MHB_ZONE);
-    strcat(topic2, "/-/+");    
-
-    topic3 = malloc(strlen(MHB_USER)+6*sizeof(char));
-    strcpy(topic3, MHB_USER);
-    strcat(topic3, "/-/-/+");  
-
-    // just need to subscribe to MHB_USER/+
 
     while(1) {
         // xSemaphoreTake(wifi_alive, portMAX_DELAY);
@@ -96,10 +160,7 @@ void  mqtt_task(void *pvParameters)
         }
         printf("done\r\n");
 
-        printf("Subscribe to topic:\n%s\n%s\n%s\n\n", topic1, topic2, topic3);
-        mqtt_subscribe(&client, topic1, MQTT_QOS1, topic_received);
-        mqtt_subscribe(&client, topic2, MQTT_QOS1, topic_received);
-        mqtt_subscribe(&client, topic3, MQTT_QOS1, topic_received);
+        subscribe_to_topics();
         xQueueReset(publish_queue);                
 
         while(1){
@@ -128,8 +189,5 @@ void  mqtt_task(void *pvParameters)
         mqtt_network_disconnect(&network);
         taskYIELD();
     }
-    free(topic1);
-    free(topic2);
-    free(topic3);
 }
 

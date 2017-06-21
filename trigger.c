@@ -6,6 +6,7 @@
 #include <esp_spiffs.h>
 
 #include "utils.h"
+#include "config.h"
 
 struct Variable
 {
@@ -26,6 +27,18 @@ struct Triggers
     size_t count;
     size_t size;
 } triggers;
+
+bool is_subscription_requiered(char * action) {
+// we should take the sting from mqtt and just search for them, if it start by..
+//    char *token;
+//    token = strtok(action, "/");
+//    if (token == NULL || strcmp(token, MHB_USER) != 0) {
+//        return true;
+//    }
+// //    token = strtok(NULL, "/");
+// //    if (token == NULL || (strcmp(token, "-") != 0 && strcmp(token, "-")))
+   return false;
+}
 
 int search_variable(char * action) {
     int index = 0;

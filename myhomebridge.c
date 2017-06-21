@@ -46,6 +46,7 @@ void user_init(void)
   ////// wifi_new_connection(WIFI_SSID, WIFI_PASS);
 
   spiffs_init();
+  mqtt_init();
   trigger_init();
   
 

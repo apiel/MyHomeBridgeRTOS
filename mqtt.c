@@ -9,6 +9,7 @@
 #include "config.h"
 #include "mqtt.h"
 #include "action.h"
+#include "trigger.h"
 
 mqtt_client_t client = mqtt_client_default;
 char mqtt_client_id[20];
@@ -101,7 +102,10 @@ static void  topic_received(mqtt_message_data_t *md)
     char * topic = strrchr(md->topic->lenstring.data, '/') + 1;
     printf("Msg received on topic: %s\nMsg: %s\n\n", topic, msg);    // , (char *)md->message->payload
 
+    // should we provide the whole topic to reducer??
     reducer(topic, msg);
+    // but actually we should be able to trigger even if not connected!!
+    // trigger(md->topic->lenstring.data, msg);
 
     free(msg);
 }
@@ -173,12 +177,23 @@ void  mqtt_task(void *pvParameters)
                 message.dup = 0;
                 message.qos = MQTT_QOS1;
                 message.retained = 1;
-                printf("got message to publish %s: %s\r\n", pxMessage->topic, pxMessage->msg);
-                ret = mqtt_publish(&client, pxMessage->topic, &message);
+
+                char * topic = pxMessage->topic;
+                // char * topic = malloc((strlen(pxMessage->topic) + strlen(topics.list[0])) * sizeof(char));
+                // strcpy(topic, topics.list[0]);
+                // topic[strlen(topics.list[0]) - 1] = '\0';
+                // strcat(topic, pxMessage->topic);
+
+                printf("got message to publish %s: %s\r\n", topic, pxMessage->msg);
+                ret = mqtt_publish(&client, topic, &message);
                 if (ret != MQTT_SUCCESS ){
                     printf("error while publishing message: %d\n", ret );
                     break;
                 }
+                // no need to put it here since we received on subscribe
+                // trigger(topic, pxMessage->msg);
+
+                // free(topic);
             }
 
             ret = mqtt_yield(&client, 1000);

@@ -1,9 +1,12 @@
-if /alex/-/-/photoresistor < 400
-if /alex/-/-/var-helo is off
-do set /alex/-/-/var-helo on
+if alex/garage/MHB_5CCF7F2B6E1E/photoresistor < 400
+if alex/-/-/var-helo is off
+do set alex/-/-/var-helo on
 do # helo is now on
 
-if /alex/-/-/photoresistor > 400
-if /alex/-/-/var-helo is on
-do set /alex/-/-/var-helo off
+if alex/garage/MHB_5CCF7F2B6E1E/photoresistor > 400
+if alex/-/-/var-helo is on
+do set alex/-/-/var-helo off
 do # helo is now off
+
+if alex/yo is yo
+do # yo yo my friend

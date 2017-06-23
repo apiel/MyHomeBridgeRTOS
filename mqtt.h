@@ -12,3 +12,4 @@ struct MQTTMessage
 
 void  mqtt_task(void *pvParameters);
 void mqtt_init();
+void insert_topic(char * topic);

@@ -7,6 +7,7 @@
 
 #include "utils.h"
 #include "config.h"
+#include "mqtt.h"
 
 struct Variable
 {
@@ -28,18 +29,14 @@ struct Triggers
     size_t size;
 } triggers;
 
-bool is_subscription_requiered(char * action) {
-// we should take the sting from mqtt and just search for them, if it start by..
-//    char *token;
-//    token = strtok(action, "/");
-//    if (token == NULL || strcmp(token, MHB_USER) != 0) {
-//        return true;
-//    }
-// //    token = strtok(NULL, "/");
-// //    if (token == NULL || (strcmp(token, "-") != 0 && strcmp(token, "-")))
-   return false;
+void list_variables() {
+    int index = 0;
+    for (; index < variables.count; index++) {
+        printf("var: %s val: %s\n", variables.list[index]->name, variables.list[index]->value);
+    }
 }
 
+// rename variable to state
 int search_variable(char * action) {
     int index = 0;
     for (; index < variables.count; index++) {
@@ -50,6 +47,17 @@ int search_variable(char * action) {
     return -1;
 }
 
+bool update_variable(char * action, char * value) {
+    int index = search_variable(action);
+    if (index > -1 && strcmp(value, variables.list[index]->value) != 0) {
+        strcpy(variables.list[index]->value, value);
+        variables.list[index]->value[strlen(value)] = '\0';
+        return true;
+    }
+    return false;
+}
+
+// we should rename it... and maybe action should called state or event or ??
 void watch_action(char * action) {
     printf("watch action: %s\n", action);
 
@@ -59,12 +67,23 @@ void watch_action(char * action) {
         struct Variable * variable = malloc(size);
         variable->name = malloc(strlen(action) * sizeof(char));
         strcpy(variable->name, action);
+        strcpy(variable->value, "\0");
         // maybe we should put a default value
 
         variables.size += size;
         variables.list = (struct Variable **)realloc(variables.list, variables.size);
         variables.list[variables.count++] = variable;
+        insert_topic(variable->name);
     }
+}
+
+void trigger(char * action, char * value) {
+    printf("Try to update var %s %s\n", action, value);
+    // if (update_variable(action, value)) {
+    //     printf("Variable changed, we should check for trigger.\n");
+    //     // list_variables();
+    // }
+    // list_variables();
 }
 
 size_t insert_trigger(char * action) {

@@ -105,7 +105,7 @@ static void  topic_received(mqtt_message_data_t *md)
     // should we provide the whole topic to reducer??
     reducer(topic, msg);
     // but actually we should be able to trigger even if not connected!!
-    // trigger(md->topic->lenstring.data, msg);
+    trigger(md->topic->lenstring.data, msg);
 
     free(msg);
 }

@@ -78,11 +78,11 @@ void watch_action(char * action) {
 }
 
 void trigger(char * action, char * value) {
-    printf("Try to update var %s %s\n", action, value);
-    // if (update_variable(action, value)) {
-    //     printf("Variable changed, we should check for trigger.\n");
-    //     // list_variables();
-    // }
+    // printf("Try to update var %s %s\n", action, value);
+    if (update_variable(action, value)) {
+        printf("Variable changed, we should check for trigger.\n");
+        list_variables();
+    }
     // list_variables();
 }
 

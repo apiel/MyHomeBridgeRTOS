@@ -9,95 +9,65 @@
 #include "config.h"
 #include "mqtt.h"
 
-struct Variable
+struct state
 {
     char * name;
     char value[256];
 };
 
-struct Variables
+struct States
 {
-    struct Variable ** list;
+    struct state ** list;
     size_t count;
     size_t size;
-} variables;
+} states;
 
-struct Triggers
-{
-    char ** list;
-    size_t count;
-    size_t size;
-} triggers;
-
-void list_variables() {
+void list_states() {
     int index = 0;
-    for (; index < variables.count; index++) {
-        printf("var: %s val: %s\n", variables.list[index]->name, variables.list[index]->value);
+    for (; index < states.count; index++) {
+        printf("state: %s val: %s\n", states.list[index]->name, states.list[index]->value);
     }
 }
 
-// rename variable to state
-int search_variable(char * action) {
+int search_state(char * state_name) {
     int index = 0;
-    for (; index < variables.count; index++) {
-        // printf("cmp: %s vs %s\n", variables.list[index]->name, action);
-        if (strcmp(variables.list[index]->name, action) == 0) {
+    for (; index < states.count; index++) {
+        // printf("cmp: %s vs %s\n", states.list[index]->name, state_name);
+        if (strcmp(states.list[index]->name, state_name) == 0) {
             return index;
         }
     }
     return -1;
 }
 
-bool update_variable(char * action, char * value) {
-    int index = search_variable(action);
-    if (index > -1 && strcmp(value, variables.list[index]->value) != 0) {
-        strcpy(variables.list[index]->value, value);
-        variables.list[index]->value[strlen(value)] = '\0';
+bool update_state(char * state_name, char * value) {
+    int index = search_state(state_name);
+    if (index > -1 && strcmp(value, states.list[index]->value) != 0) {
+        strcpy(states.list[index]->value, value);
+        states.list[index]->value[strlen(value)] = '\0';
         return true;
     }
     return false;
 }
 
-// we should rename it... and maybe action should called state or event or ??
-void watch_action(char * action) {
-    printf("watch action: %s\n", action);
+// we should rename it... and maybe state_name should called state or event or ??
+void watch_state(char * state_name) {
+    printf("watch state_name: %s\n", state_name);
 
-    if (search_variable(action) == -1) {
-        printf("Variable not in list, insert it\n");
-        size_t size = sizeof(struct Variable);
-        struct Variable * variable = malloc(size);
-        variable->name = malloc(strlen(action) * sizeof(char));
-        strcpy(variable->name, action);
-        strcpy(variable->value, "\0");
+    if (search_state(state_name) == -1) {
+        printf("state not in list, insert it\n");
+        size_t size = sizeof(struct state);
+        struct state * state = malloc(size);
+        state->name = malloc(strlen(state_name) * sizeof(char));
+        strcpy(state->name, state_name);
+        strcpy(state->value, "\0");
         // maybe we should put a default value
 
-        variables.size += size;
-        variables.list = (struct Variable **)realloc(variables.list, variables.size);
-        variables.list[variables.count++] = variable;
-        insert_topic(variable->name);
+        states.size += size;
+        states.list = (struct state **)realloc(states.list, states.size);
+        states.list[states.count++] = state;
+        insert_topic(state->name);
     }
-}
-
-size_t insert_trigger(char * action) {
-    size_t size = strlen(action) * sizeof(char);
-    char * _action = malloc(size);
-    strcpy(_action, action);
-
-    triggers.size += size;
-    triggers.list = (char **)realloc(triggers.list, triggers.size);
-    triggers.list[triggers.count++] = _action;
-
-    return triggers.count-1;
-}
-
-int search_trigger(char * action) {
-    int index = 0;
-    for (; index < triggers.count; index++) {
-        if (strcmp(triggers.list[index], action) == 0) {
-            return index;
-        }
-    }
-    return -1;
 }
 
 bool is_valid = true;
@@ -105,26 +75,22 @@ bool is_valid = true;
 void parser_init_triggers(char * line) 
 {
     char type[2];
-    char action[32];
+    char state_name[32];
 
     char * next = str_extract(line, 0, ' ', type) + 1;
     // printf("trigger type: %s\n", type);
     if (strcmp(type, "if") == 0) {
         // printf("next: %s\n", next);
-        str_extract(next, 0, ' ', action);
-        if (is_valid && search_trigger(action) == -1) {
-            // printf("-------- action not in list, insert.\n");
-            insert_trigger(action);
-        }                        
+        str_extract(next, 0, ' ', state_name);                     
         is_valid = false;
-        watch_action(action);
+        watch_state(state_name);
     }
 }
 
 void parser_triggers(char * line) 
 {
     char type[2];
-    char action[32];
+    char state_name[32];
     char operator[2];
 
     if (is_valid) {
@@ -132,12 +98,12 @@ void parser_triggers(char * line)
         printf("trigger type: %s\n", type);
         if (strcmp(type, "if") == 0) {
             printf("next: %s\n", next);
-            next = str_extract(next, 0, ' ', action) + 1;
-            int index = search_variable(action); 
-            printf("Search for trigger: %s (%d)\n", action, index);            
+            next = str_extract(next, 0, ' ', state_name) + 1;
+            int index = search_state(state_name); 
+            printf("Search for state: %s (%d)\n", state_name, index);            
             is_valid = index > -1;
             if (is_valid) {
-                char * value = variables.list[index]->value;
+                char * value = states.list[index]->value;
                 next = str_extract(next, 0, ' ', operator) + 1;
                 printf("operator: '%s'\n", operator);
                 if (strcmp(operator, "is") == 0) {
@@ -157,12 +123,12 @@ void parser_triggers(char * line)
                 }             
             }
             else {
-                printf("Something strange happen, action not watched.\n");
+                printf("Something strange happen, state not watched.\n");
             }
             printf("is valid %d\n", is_valid);
         }
         else if (strcmp(type, "do") == 0) {
-            printf("do action: %s\n", next);
+            printf("do state_name: %s\n", next);
         }
     }      
 }
@@ -203,19 +169,16 @@ void parse_triggers_file(void (*parser_callback)(char * line))
 
 void trigger_init() 
 {
-    triggers.count = 0;
-    triggers.size = 0;
-
-    variables.count = 0;
-    variables.size = 0;
+    states.count = 0;
+    states.size = 0;
 
     parse_triggers_file(parser_init_triggers);
 }
 
-void trigger(char * action, char * value) {
-    if (update_variable(action, value)) {
-        printf("Variable changed, we should check for trigger.\n");
+void trigger(char * state_name, char * value) {
+    if (update_state(state_name, value)) {
+        printf("State changed, we should check for trigger.\n");
         parse_triggers_file(parser_triggers);
-        // list_variables();        
+        // list_states();        
     }
 }

@@ -69,6 +69,7 @@ void mqtt_init()
 
     char * topic;
     topic = malloc(strlen(MHB_USER)+strlen(MHB_ZONE)+strlen(mqtt_client_id)+4*sizeof(char));
+    // let s use sprintf
     strcpy(topic, MHB_USER);
     strcat(topic, "/");
     strcat(topic, MHB_ZONE);    
@@ -79,6 +80,7 @@ void mqtt_init()
     free(topic);
 
     topic = malloc(strlen(MHB_USER)+strlen(MHB_ZONE)+5*sizeof(char));
+    // let s use sprintf
     strcpy(topic, MHB_USER);
     strcat(topic, "/");
     strcat(topic, MHB_ZONE);
@@ -87,6 +89,7 @@ void mqtt_init()
     free(topic);
 
     topic = malloc(strlen(MHB_USER)+6*sizeof(char));
+    // let s use sprintf
     strcpy(topic, MHB_USER);
     strcat(topic, "/-/-/+");
     insert_topic(topic);

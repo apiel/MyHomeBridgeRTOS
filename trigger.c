@@ -40,6 +40,7 @@ void list_variables() {
 int search_variable(char * action) {
     int index = 0;
     for (; index < variables.count; index++) {
+        // printf("cmp: %s vs %s\n", variables.list[index]->name, action);
         if (strcmp(variables.list[index]->name, action) == 0) {
             return index;
         }
@@ -77,15 +78,6 @@ void watch_action(char * action) {
     }
 }
 
-void trigger(char * action, char * value) {
-    // printf("Try to update var %s %s\n", action, value);
-    if (update_variable(action, value)) {
-        printf("Variable changed, we should check for trigger.\n");
-        list_variables();
-    }
-    // list_variables();
-}
-
 size_t insert_trigger(char * action) {
     size_t size = strlen(action) * sizeof(char);
     char * _action = malloc(size);
@@ -108,15 +100,79 @@ int search_trigger(char * action) {
     return -1;
 }
 
-void load_triggers()
+bool is_valid = true;
+
+void parser_init_triggers(char * line) 
+{
+    char type[2];
+    char action[32];
+
+    char * next = str_extract(line, 0, ' ', type) + 1;
+    // printf("trigger type: %s\n", type);
+    if (strcmp(type, "if") == 0) {
+        // printf("next: %s\n", next);
+        str_extract(next, 0, ' ', action);
+        if (is_valid && search_trigger(action) == -1) {
+            // printf("-------- action not in list, insert.\n");
+            insert_trigger(action);
+        }                        
+        is_valid = false;
+        watch_action(action);
+    }
+}
+
+void parser_triggers(char * line) 
+{
+    char type[2];
+    char action[32];
+    char operator[2];
+
+    if (is_valid) {
+        char * next = str_extract(line, 0, ' ', type) + 1;
+        printf("trigger type: %s\n", type);
+        if (strcmp(type, "if") == 0) {
+            printf("next: %s\n", next);
+            next = str_extract(next, 0, ' ', action) + 1;
+            int index = search_variable(action); 
+            printf("Search for trigger: %s (%d)\n", action, index);            
+            is_valid = index > -1;
+            if (is_valid) {
+                char * value = variables.list[index]->value;
+                next = str_extract(next, 0, ' ', operator) + 1;
+                printf("operator: '%s'\n", operator);
+                if (strcmp(operator, "is") == 0) {
+                    printf("is operator, %s\n", next);
+                    is_valid = strcmp(next, value) == 0;
+                }
+                else if (strcmp(operator, ">") == 0) {
+                    printf("> operator, need to convert to numeric\n");
+                    is_valid = atof(value) > atof(next); // we should maybe verify that it is numeric value
+                }
+                else if (strcmp(operator, "<") == 0) {
+                    printf("< operator, need to convert to numeric\n");
+                    is_valid = atof(value) < atof(next); // we should maybe verify that it is numeric value
+                }
+                else {
+                    printf("unknown operator.\n");
+                }             
+            }
+            else {
+                printf("Something strange happen, action not watched.\n");
+            }
+            printf("is valid %d\n", is_valid);
+        }
+        else if (strcmp(type, "do") == 0) {
+            printf("do action: %s\n", next);
+        }
+    }      
+}
+
+void parse_triggers_file(void (*parser_callback)(char * line))
 {
     const int max_size = 1024;
     char buf[max_size];
     uint8_t c[1];
     int pos = 0;
-    char type[2];
-    char action[32];
-    bool is_first_condition = true;
 
     spiffs_file fd = SPIFFS_open(&fs, "triggers", SPIFFS_RDONLY, 0);
     if (fd < 0) {
@@ -124,28 +180,18 @@ void load_triggers()
         return;
     }
 
+    is_valid = true;
     while (SPIFFS_read(&fs, fd, c, 1)) {
         // we should do something with the max_size!!
         if (c[0] == '\n' || SPIFFS_eof(&fs, fd)) {
             buf[pos] = '\0';             
-            printf("trigger line (%d): %s\n", pos, buf);
+            // printf("trigger line (%d): %s\n", pos, buf);
             if (pos == 0) {
-                is_first_condition = true;
-                printf("got 2 \\n, set is first trigger to true\n");
+                is_valid = true;
+                // printf("got 2 \\n, set is first trigger to true\n");
             } else {
                 pos = 0; 
-                char * next = str_extract(buf, 0, ' ', type) + 1;
-                printf("trigger type: %s\n", type);
-                if (strcmp(type, "if") == 0) {
-                    printf("next: %s\n", next);
-                    str_extract(next, 0, ' ', action);
-                    if (is_first_condition == true && search_trigger(action) == -1) {
-                        printf("-------- action not in list, insert.\n");
-                        insert_trigger(action);
-                    }                        
-                    is_first_condition = false;
-                    watch_action(action);
-                }
+                parser_callback(buf);
             }
             if (SPIFFS_eof(&fs, fd)) break;
         }
@@ -163,5 +209,13 @@ void trigger_init()
     variables.count = 0;
     variables.size = 0;
 
-    load_triggers();
+    parse_triggers_file(parser_init_triggers);
+}
+
+void trigger(char * action, char * value) {
+    if (update_variable(action, value)) {
+        printf("Variable changed, we should check for trigger.\n");
+        parse_triggers_file(parser_triggers);
+        // list_variables();        
+    }
 }

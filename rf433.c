@@ -114,7 +114,7 @@ unsigned long micros()
 //     printf("int2bin: %s\n", bits);
 // }
 
-bool is_valid(char aa, char bb, uint8_t cmp) {
+bool is_valid_combination(char aa, char bb, uint8_t cmp) {
     uint8_t a = aa == 49; // 49 is '1'
     uint8_t b = bb == 49;
     return ((a<<b)+(a|b)) == cmp; // 0<<0=0 0<<1=0 1<<0=1 1<<1=2, if not 0<<0 add +1 -> 0|0=0 1|0=1 0|1=1 1|1=1
@@ -123,13 +123,13 @@ bool is_valid(char aa, char bb, uint8_t cmp) {
 bool is_invalid_manchester_code(struct RF433protocol * protocol, uint8_t bit, char * bits) {
     return (protocol->manchester_code 
                  && bit % 4 == 3 
-                 && is_valid(bits[bit-3], bits[bit-2], protocol->zero) == is_valid(bits[bit-1], bits[bit], protocol->zero));
+                 && is_valid_combination(bits[bit-3], bits[bit-2], protocol->zero) == is_valid_combination(bits[bit-1], bits[bit], protocol->zero));
 }
 
 bool is_invalid_zero_or_one(struct RF433protocol * protocol, uint8_t bit, char * bits) {
     return (bit % 2 == 1 
-                 && !is_valid(bits[bit-1], bits[bit], protocol->zero) 
-                 && !is_valid(bits[bit-1], bits[bit], protocol->one));
+                 && !is_valid_combination(bits[bit-1], bits[bit], protocol->zero) 
+                 && !is_valid_combination(bits[bit-1], bits[bit], protocol->one));
 }
 
 int rf433_get_protocol(unsigned int duration)

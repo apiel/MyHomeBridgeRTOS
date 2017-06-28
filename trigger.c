@@ -9,31 +9,36 @@
 #include "config.h"
 #include "mqtt.h"
 
-struct state
+#define state_size 32
+
+size_t states_count = 0;
+
+struct State
 {
-    char * name;
+    char name[128];
     char value[256];
 };
+struct State states[state_size];
 
-struct States
-{
-    struct state ** list;
-    size_t count;
-    size_t size;
-} states;
+// struct States
+// {
+//     struct State ** list;
+//     size_t count;
+//     size_t size;
+// } states;
 
 void list_states() {
     int index = 0;
-    for (; index < states.count; index++) {
-        printf("state: %s val: %s\n", states.list[index]->name, states.list[index]->value);
+    for (; index < states_count; index++) {
+        printf("state: %s val: %s\n", states[index].name, states[index].value);
     }
 }
 
 int search_state(char * state_name) {
     int index = 0;
-    for (; index < states.count; index++) {
+    for (; index < states_count; index++) {
         // printf("cmp: %s vs %s\n", states.list[index]->name, state_name);
-        if (strcmp(states.list[index]->name, state_name) == 0) {
+        if (strcmp(states[index].name, state_name) == 0) {
             return index;
         }
     }
@@ -42,9 +47,9 @@ int search_state(char * state_name) {
 
 bool update_state(char * state_name, char * value) {
     int index = search_state(state_name);
-    if (index > -1 && strcmp(value, states.list[index]->value) != 0) {
-        strcpy(states.list[index]->value, value);
-        states.list[index]->value[strlen(value)] = '\0';
+    if (index > -1 && strcmp(value, states[index].value) != 0) {
+        strcpy(states[index].value, value);
+        states[index].value[strlen(value)] = '\0';
         return true;
     }
     return false;
@@ -56,17 +61,15 @@ void watch_state(char * state_name) {
 
     if (search_state(state_name) == -1) {
         printf("state not in list, insert it\n");
-        size_t size = sizeof(struct state);
-        struct state * state = malloc(size);
-        state->name = malloc(strlen(state_name) * sizeof(char));
-        strcpy(state->name, state_name);
-        strcpy(state->value, "\0");
-        // maybe we should put a default value
+        if (states_count < state_size) {
+            strcpy(states[states_count].name, state_name);
+            strcpy(states[states_count].value, "\0");
+            states_count++;
 
-        states.size += size;
-        states.list = (struct state **)realloc(states.list, states.size);
-        states.list[states.count++] = state;
-        insert_topic(state->name);
+            insert_topic(states[states_count].name);
+        } else {
+            printf("state cannot be inserted, limit of %d reached.\n", state_size);
+        }
     }
 }
 
@@ -103,7 +106,7 @@ void parser_triggers(char * line)
             printf("Search for state: %s (%d)\n", state_name, index);            
             is_valid = index > -1;
             if (is_valid) {
-                char * value = states.list[index]->value;
+                char * value = states[index].value;
                 next = str_extract(next, 0, ' ', operator) + 1;
                 printf("operator: '%s'\n", operator);
                 if (strcmp(operator, "is") == 0) {
@@ -169,9 +172,6 @@ void parse_triggers_file(void (*parser_callback)(char * line))
 
 void trigger_init() 
 {
-    states.count = 0;
-    states.size = 0;
-
     parse_triggers_file(parser_init_triggers);
 }
 

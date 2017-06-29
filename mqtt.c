@@ -11,25 +11,22 @@
 #include "action.h"
 #include "trigger.h"
 
+#define topics_size 24
+
 mqtt_client_t client = mqtt_client_default;
 char mqtt_client_id[20];
 
-struct Topics
-{
-    char ** list;
-    size_t count;
-    size_t size;
-} topics;
+char topics[topics_size][128];
+size_t topics_count = 0;
 
 bool is_topic_already_inserted(char * topic) {
     int index = 0;
-    for (; index < topics.count; index++) {
-        char * topicCmp = topics.list[index];
-        size_t len = strlen(topicCmp);
-        if (topicCmp[len-1] == '+') {
+    for (; index < topics_count; index++) {
+        size_t len = strlen(topics[index]);
+        if (topics[index][len-1] == '+') {
             len--;
-            topicCmp = malloc(len * sizeof(char));
-            memcpy(topicCmp, topics.list[index], len);
+            char topicCmp[128];
+            memcpy(topicCmp, topics[index], len);
             topicCmp[len] = '\0';
 
             char * found = strstr(topic, topicCmp);
@@ -39,7 +36,7 @@ bool is_topic_already_inserted(char * topic) {
             }
         } 
         else {
-            printf("Topic to compare B: %s\n", topicCmp);
+            printf("Topic to compare B: %s\n", topics[index]);
         }
     }
 
@@ -48,27 +45,22 @@ bool is_topic_already_inserted(char * topic) {
 
 void insert_topic(char * topic) {
     if (!is_topic_already_inserted(topic)) {
-        printf("Insert topic: %s\n", topic);
-        size_t size = strlen(topic) * sizeof(char);
-        char * _topic = malloc(size);
-        strcpy(_topic, topic);
-
-        topics.size += size;
-        topics.list = (char **)realloc(topics.list, topics.size);
-        topics.list[topics.count++] = _topic;
+        if (topics_count < topics_size) {
+            printf("Insert topic: %s\n", topic);
+            strcpy(topics[topics_count++], topic);   
+        } else {
+            printf("Topics cannot be inserted, limit of %d reached..\n", topics_size);
+        }
     }
 }
 
 void mqtt_init() 
 {
-    topics.count = 0;
-    topics.size = 0;
-
     memset(mqtt_client_id, 0, sizeof(mqtt_client_id));
     strcpy(mqtt_client_id, get_uid());    
 
-    char * topic;
-    topic = malloc(strlen(MHB_USER)+strlen(MHB_ZONE)+strlen(mqtt_client_id)+4*sizeof(char));
+    // we could define the topic size to share the same size between each .c file
+    char topic[128];
     // let s use sprintf
     strcpy(topic, MHB_USER);
     strcat(topic, "/");
@@ -77,28 +69,23 @@ void mqtt_init()
     strcat(topic, mqtt_client_id);
     strcat(topic, "/+");
     insert_topic(topic);
-    free(topic);
 
-    topic = malloc(strlen(MHB_USER)+strlen(MHB_ZONE)+5*sizeof(char));
     // let s use sprintf
     strcpy(topic, MHB_USER);
     strcat(topic, "/");
     strcat(topic, MHB_ZONE);
     strcat(topic, "/-/+");
     insert_topic(topic);
-    free(topic);
 
-    topic = malloc(strlen(MHB_USER)+6*sizeof(char));
     // let s use sprintf
     strcpy(topic, MHB_USER);
     strcat(topic, "/-/-/+");
     insert_topic(topic);
-    free(topic);
 }
 
 static void  topic_received(mqtt_message_data_t *md)
 {
-    char * msg = malloc(md->message->payloadlen*sizeof(char));
+    char msg[1048]; // hope it s enough
     memcpy(msg, md->message->payload, md->message->payloadlen);
     msg[md->message->payloadlen] = '\0';
     
@@ -109,15 +96,14 @@ static void  topic_received(mqtt_message_data_t *md)
     reducer(topic, msg);
     // but actually we should be able to trigger even if not connected!!
     trigger(md->topic->lenstring.data, msg);
-
-    free(msg);
 }
 
 void subscribe_to_topics() {
     int index = 0;
-    for (; index < topics.count; index++) {
-        printf("Subscribe to topic: %s\n", topics.list[index]);
-        mqtt_subscribe(&client, topics.list[index], MQTT_QOS1, topic_received);
+    printf("Subscribe to topics: %d\n", topics_count);
+    for (; index < topics_count; index++) {
+        printf("Subscribe to topic: %s\n", topics[index]);
+        mqtt_subscribe(&client, topics[index], MQTT_QOS1, topic_received);
     }
 }
 
@@ -208,4 +194,3 @@ void  mqtt_task(void *pvParameters)
         taskYIELD();
     }
 }
-

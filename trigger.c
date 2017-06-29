@@ -9,7 +9,7 @@
 #include "config.h"
 #include "mqtt.h"
 
-#define state_size 32
+#define state_size 24
 
 size_t states_count = 0;
 
@@ -66,7 +66,7 @@ void watch_state(char * state_name) {
             strcpy(states[states_count].value, "\0");
             states_count++;
 
-            insert_topic(states[states_count].name);
+            insert_topic(state_name);
         } else {
             printf("state cannot be inserted, limit of %d reached.\n", state_size);
         }

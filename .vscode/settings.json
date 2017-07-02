@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "c++config.h": "c",
-        "binders.h": "c"
+        "binders.h": "c",
+        "stdio2.h": "c"
     }
 }

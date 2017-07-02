@@ -15,6 +15,7 @@
 struct RF433protocol rf433protocolss[] = {
     { {9900 , 1000}, {2675, 180}, {275, 180}, {1225, 180}, PULSE_LOW_LOW, PULSE_LOW_HIGH, true },
     { {5700 , 50}, {0, 0}, {180, 100}, {551, 100}, PULSE_LOW_HIGH, PULSE_HIGH_LOW, false }
+    // , { {55000 , 5000}, {0, 0}, {2000, 100}, {21600, 100}, PULSE_LOW_HIGH, PULSE_HIGH_LOW, false }
 };
 
 uint8_t rf433protocols_count = sizeof(rf433protocolss) / sizeof(rf433protocolss[0]);
@@ -174,7 +175,7 @@ void rf433_task(void *pvParameters)
             previous_pin_value = pin_value;
             unsigned long time = micros();
             unsigned int duration = time - last_time;
-            // printf("%d\n", duration);
+            printf("d: %d\n", duration);
 
             if (protocol_key != -1 && diff(duration, trigger, 200)) {
                 bits[bit] = '\0';

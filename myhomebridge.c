@@ -61,3 +61,16 @@ void user_init(void)
   ////// xTaskCreate(&pir_task, "pir_task", 1024, NULL, 5, NULL);
   xTaskCreate(&photoresistor_task, "photoresistor_task", 1024, NULL, 5, NULL);  
 }
+
+/*
+
+ToDo
+
+unit test
+ifndef to activate pir, rf emitter, rf receiver, photosensor, dht11
+mqtt send message with full path
+trigger call reducer
+trigger accept -/-/-
+rf receiver > look at rcswitch to make the new rf receive module working
+
+*/

@@ -175,7 +175,7 @@ void rf433_task(void *pvParameters)
             previous_pin_value = pin_value;
             unsigned long time = micros();
             unsigned int duration = time - last_time;
-            printf("d: %d\n", duration);
+            // printf("d: %d\n", duration);
 
             if (protocol_key != -1 && diff(duration, trigger, 200)) {
                 bits[bit] = '\0';

@@ -88,14 +88,15 @@ static void  topic_received(mqtt_message_data_t *md)
     char msg[1048]; // hope it s enough
     memcpy(msg, md->message->payload, md->message->payloadlen);
     msg[md->message->payloadlen] = '\0';
-    
+
     char * topic = strrchr(md->topic->lenstring.data, '/') + 1;
     printf("Msg received on topic: %s\nMsg: %s\n\n", topic, msg);    // , (char *)md->message->payload
 
+    // we have to verify that this message is for us
     // should we provide the whole topic to reducer??
     reducer(topic, msg);
     // but actually we should be able to trigger even if not connected!!
-    trigger(md->topic->lenstring.data, msg);
+    // trigger(md->topic->lenstring.data, msg);
 }
 
 void subscribe_to_topics() {
@@ -153,7 +154,9 @@ void  mqtt_task(void *pvParameters)
         }
         printf("done\r\n");
 
-        subscribe_to_topics();
+        // subscribe_to_topics();
+        printf("Subscribe to topic.............\n");
+        mqtt_subscribe(&client, "alex/lol", MQTT_QOS1, topic_received);
         xQueueReset(publish_queue);                
 
         while(1){
@@ -167,11 +170,12 @@ void  mqtt_task(void *pvParameters)
                 message.qos = MQTT_QOS1;
                 message.retained = 1;
 
-                char * topic = pxMessage->topic;
-                // char * topic = malloc((strlen(pxMessage->topic) + strlen(topics.list[0])) * sizeof(char));
-                // strcpy(topic, topics.list[0]);
-                // topic[strlen(topics.list[0]) - 1] = '\0';
-                // strcat(topic, pxMessage->topic);
+                // char * topic = pxMessage->topic;
+
+                char topic[128];
+                strcpy(topic, topics[0]);
+                topic[strlen(topic) - 1] = '\0';
+                strcat(topic, pxMessage->topic);                
 
                 printf("got message to publish %s: %s\r\n", topic, pxMessage->msg);
                 ret = mqtt_publish(&client, topic, &message);
@@ -181,8 +185,6 @@ void  mqtt_task(void *pvParameters)
                 }
                 // no need to put it here since we received on subscribe
                 // trigger(topic, pxMessage->msg);
-
-                // free(topic);
             }
 
             ret = mqtt_yield(&client, 1000);

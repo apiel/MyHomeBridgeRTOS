@@ -47,7 +47,7 @@ void user_init(void)
 
   spiffs_init();
   mqtt_init();
-  trigger_init();
+//   trigger_init();
   
 
   rf433_init();
@@ -71,6 +71,7 @@ ifndef to activate pir, rf emitter, rf receiver, photosensor, dht11
 mqtt send message with full path
 trigger call reducer
 trigger accept -/-/-
+trigger should work also without mqtt --> thermostat
 rf receiver > look at rcswitch to make the new rf receive module working
 
 */

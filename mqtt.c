@@ -85,18 +85,27 @@ void mqtt_init()
 
 static void  topic_received(mqtt_message_data_t *md)
 {
+    // char topic[128];
     char msg[1048]; // hope it s enough
     memcpy(msg, md->message->payload, md->message->payloadlen);
     msg[md->message->payloadlen] = '\0';
 
-    char * topic = strrchr(md->topic->lenstring.data, '/') + 1;
-    printf("Msg received on topic: %s\nMsg: %s\n\n", topic, msg);    // , (char *)md->message->payload
+    md->topic->lenstring.data[md->topic->lenstring.len] = '\0';
+
+    printf("Msg received on topic %d: %s\n", 
+                         md->topic->lenstring.len, 
+                         md->topic->lenstring.data); 
+
+    // memcpy(topic, md->message->payload, md->message->payloadlen);
+
+    char * action = strrchr(md->topic->lenstring.data, '/') + 1;
+    printf("action: %s\nMsg: %s\n\n", action, msg);    // , (char *)md->message->payload
 
     // we have to verify that this message is for us
     // should we provide the whole topic to reducer??
-    reducer(topic, msg);
+    reducer(action, msg);
     // but actually we should be able to trigger even if not connected!!
-    // trigger(md->topic->lenstring.data, msg);
+    trigger(md->topic->lenstring.data, msg);
 }
 
 void subscribe_to_topics() {
@@ -154,9 +163,9 @@ void  mqtt_task(void *pvParameters)
         }
         printf("done\r\n");
 
-        // subscribe_to_topics();
-        printf("Subscribe to topic.............\n");
-        mqtt_subscribe(&client, "alex/lol", MQTT_QOS1, topic_received);
+        subscribe_to_topics();
+        // printf("Subscribe to topic.............\n");
+        // mqtt_subscribe(&client, "alex/#", MQTT_QOS1, topic_received);
         xQueueReset(publish_queue);                
 
         while(1){

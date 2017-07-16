@@ -47,7 +47,7 @@ void user_init(void)
 
   spiffs_init();
   mqtt_init();
-//   trigger_init();
+  trigger_init();
   
 
   rf433_init();
@@ -74,4 +74,5 @@ trigger accept -/-/-
 trigger should work also without mqtt --> thermostat
 rf receiver > look at rcswitch to make the new rf receive module working
 
+we should make rf433 action two times...
 */

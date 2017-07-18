@@ -19,6 +19,7 @@
 #include "rf433.h"
 #include "dht.h"
 #include "pir.h"
+#include "upnp.h"
 #include "photoresistor.h"
 #include "trigger.h"
 
@@ -59,7 +60,8 @@ void user_init(void)
   xTaskCreate(&httpd_task, "http_server", 1024, NULL, 2, NULL);
   xTaskCreate(&dht_task, "dht_task", 1024, NULL, 5, NULL);
   ////// xTaskCreate(&pir_task, "pir_task", 1024, NULL, 5, NULL);
-  xTaskCreate(&photoresistor_task, "photoresistor_task", 1024, NULL, 5, NULL);  
+  xTaskCreate(&photoresistor_task, "photoresistor_task", 1024, NULL, 5, NULL);
+  xTaskCreate(&upnp_task, "upnp_task", 1024, NULL, 5, NULL);
 }
 
 /*

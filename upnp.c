@@ -1,3 +1,7 @@
+#include "config.h"
+
+#ifdef UPNP
+
 #include <string.h>
 #include <lwip/udp.h>
 #include <lwip/igmp.h>
@@ -72,18 +76,6 @@ static void send(struct udp_pcb *upcb, struct ip_addr *addr, u16_t port)
 {
     struct pbuf *p;
     char msg[500];
-    // snprintf(msg, sizeof(msg),
-    //     "HTTP/1.1 200 OK\r\n"
-    //     "CACHE-CONTROL: max-age=86400\r\n"
-    //     "DATE: Fri, 15 Apr 2016 04:56:29 GMT\r\n"
-    //     "EXT:\r\n"
-    //     "LOCATION: http://%s:80/setup.xml\r\n"
-    //     "OPT: \"http://schemas.upnp.org/upnp/1/0/\"; ns=01\r\n"
-    //     "01-NLS: b9200ebb-736d-4b93-bf03-835149d13983\r\n"
-    //     "SERVER: Unspecified, UPnP/1.0, Unspecified\r\n"
-    //     "ST: urn:Belkin:device:**\r\n"
-    //     "USN: uuid:Socket-1_0-38323636-4558-4dda-9188-cda0e6cc3dc0::urn:Belkin:device:**\r\n"
-    //     "X-User-Agent: redsonic\r\n\r\n", get_my_ip());
 
     snprintf(msg, sizeof(msg),
         "HTTP/1.1 200 OK\r\n"
@@ -91,7 +83,7 @@ static void send(struct udp_pcb *upcb, struct ip_addr *addr, u16_t port)
         "SERVER: node.js/0.10.28 UPnP/1.1\r\n"
         "ST: urn:schemas-upnp-org:device:basic:1\r\n"
         "USN: uuid:Socket-1_0-221438K0100073::urn:Belkin:device:**\r\n"
-        "LOCATION: http://192.168.0.13:80/upnp/amazon-ha-bridge/setup.xml\r\n"
+        "LOCATION: http://%s:80/api/setup.xml\r\n"
         "HOST: 239.255.255.250:1900\r\n"
         "CACHE-CONTROL: max-age=1800\r\n"
         "EXT: \r\n"
@@ -156,3 +148,76 @@ void upnp_task(void *pvParameters)
         vTaskDelay(1000);
     }   
 }
+
+char * upnp_setup_response()
+{
+    return
+        "<?xml version=\"1.0\"?>"
+        "<root xmlns=\"urn:schemas-upnp-org:device-1-0\">"
+        "<specVersion>"
+        "<major>1</major>"
+        "<minor>0</minor>"
+        "</specVersion>"
+        "<URLBase>http://192.168.42.102:8082/</URLBase>"
+        "<device>"
+        "<deviceType>urn:schemas-upnp-org:device:Basic:1</deviceType>"
+        "<friendlyName>Amazon-Echo-HA-Bridge (192.168.42.102)</friendlyName>"
+        "<manufacturer>Royal Philips Electronics</manufacturer>"
+        "<manufacturerURL>http://www.armzilla..com</manufacturerURL>"
+        "<modelDescription>Hue Emulator for Amazon Echo bridge</modelDescription>"
+        "<modelName>Philips hue bridge 2012</modelName>"
+        "<modelNumber>929000226503</modelNumber>"
+        "<modelURL>http://www.armzilla.com/amazon-echo-ha-bridge</modelURL>"
+        "<serialNumber>01189998819991197253</serialNumber>"
+        "<UDN>uuid:88f6698f-2c83-4393-bd03-cd54a9f8595</UDN>"
+        "<serviceList>"
+        "<service>"
+        "<serviceType>(null)</serviceType>"
+        "<serviceId>(null)</serviceId>"
+        "<controlURL>(null)</controlURL>"
+        "<eventSubURL>(null)</eventSubURL>"
+        "<SCPDURL>(null)</SCPDURL>"
+        "</service>"
+        "</serviceList>"
+        "<presentationURL>index.html</presentationURL>"
+        "<iconList>"
+        "<icon>"
+        "<mimetype>image/png</mimetype>"
+        "<height>48</height>"
+        "<width>48</width>"
+        "<depth>24</depth>"
+        "<url>hue_logo_0.png</url>"
+        "</icon>"
+        "<icon>"
+        "<mimetype>image/png</mimetype>"
+        "<height>120</height>"
+        "<width>120</width>"
+        "<depth>24</depth>"
+        "<url>hue_logo_3.png</url>"
+        "</icon>"
+        "</iconList>"
+        "</device>"
+        "</root>";
+}
+
+char * upnp_config_response()
+{
+    return "{\"lights\":{\"5102d46c-50d5-4bc7-a180-38623e4bbb08\":{\"state\":{\"on\":false,\"bri\":254,\"hue\":15823,\"sat\":88,\"effect\":\"none\",\"ct\":313,\"alert\":\"none\",\"colormode\":\"ct\",\"reachable\":true,\"xy\":[0.4255,0.3998]},\"type\":\"Extended color light\",\"name\":\"ceiling lights\",\"modelid\":\"LCT001\",\"manufacturername\":\"Philips\",\"uniqueid\":\"5102d46c-50d5-4bc7-a180-38623e4bbb08\",\"swversion\":\"65003148\",\"pointsymbol\":{\"1\":\"none\",\"2\":\"none\",\"3\":\"none\",\"4\":\"none\",\"5\":\"none\",\"6\":\"none\",\"7\":\"none\",\"8\":\"none\"}},\"69d4f390-9bef-468b-b58e-4495027ff33c\":{\"state\":{\"on\":false,\"bri\":254,\"hue\":15823,\"sat\":88,\"effect\":\"none\",\"ct\":313,\"alert\":\"none\",\"colormode\":\"ct\",\"reachable\":true,\"xy\":[0.4255,0.3998]},\"type\":\"Extended color light\",\"name\":\"hallway light\",\"modelid\":\"LCT001\",\"manufacturername\":\"Philips\",\"uniqueid\":\"69d4f390-9bef-468b-b58e-4495027ff33c\",\"swversion\":\"65003148\",\"pointsymbol\":{\"1\":\"none\",\"2\":\"none\",\"3\":\"none\",\"4\":\"none\",\"5\":\"none\",\"6\":\"none\",\"7\":\"none\",\"8\":\"none\"}},\"bce07c22-c014-4dfd-81ba-1e10ee5a9d8d\":{\"state\":{\"on\":false,\"bri\":254,\"hue\":15823,\"sat\":88,\"effect\":\"none\",\"ct\":313,\"alert\":\"none\",\"colormode\":\"ct\",\"reachable\":true,\"xy\":[0.4255,0.3998]},\"type\":\"Extended color light\",\"name\":\"desk light\",\"modelid\":\"LCT001\",\"manufacturername\":\"Philips\",\"uniqueid\":\"bce07c22-c014-4dfd-81ba-1e10ee5a9d8d\",\"swversion\":\"65003148\",\"pointsymbol\":{\"1\":\"none\",\"2\":\"none\",\"3\":\"none\",\"4\":\"none\",\"5\":\"none\",\"6\":\"none\",\"7\":\"none\",\"8\":\"none\"}},\"4e86d654-be0e-49c2-889e-a26dce51984a\":{\"state\":{\"on\":false,\"bri\":254,\"hue\":15823,\"sat\":88,\"effect\":\"none\",\"ct\":313,\"alert\":\"none\",\"colormode\":\"ct\",\"reachable\":true,\"xy\":[0.4255,0.3998]},\"type\":\"Extended color light\",\"name\":\"window\",\"modelid\":\"LCT001\",\"manufacturername\":\"Philips\",\"uniqueid\":\"4e86d654-be0e-49c2-889e-a26dce51984a\",\"swversion\":\"65003148\",\"pointsymbol\":{\"1\":\"none\",\"2\":\"none\",\"3\":\"none\",\"4\":\"none\",\"5\":\"none\",\"6\":\"none\",\"7\":\"none\",\"8\":\"none\"}},\"9101b329-7ec8-439c-9ab5-a85b02aa9133\":{\"state\":{\"on\":false,\"bri\":254,\"hue\":15823,\"sat\":88,\"effect\":\"none\",\"ct\":313,\"alert\":\"none\",\"colormode\":\"ct\",\"reachable\":true,\"xy\":[0.4255,0.3998]},\"type\":\"Extended color light\",\"name\":\"outside light\",\"modelid\":\"LCT001\",\"manufacturername\":\"Philips\",\"uniqueid\":\"9101b329-7ec8-439c-9ab5-a85b02aa9133\",\"swversion\":\"65003148\",\"pointsymbol\":{\"1\":\"none\",\"2\":\"none\",\"3\":\"none\",\"4\":\"none\",\"5\":\"none\",\"6\":\"none\",\"7\":\"none\",\"8\":\"none\"}},\"52e49aa1-f0b2-4887-8ffc-37e15803edb8\":{\"state\":{\"on\":false,\"bri\":254,\"hue\":15823,\"sat\":88,\"effect\":\"none\",\"ct\":313,\"alert\":\"none\",\"colormode\":\"ct\",\"reachable\":true,\"xy\":[0.4255,0.3998]},\"type\":\"Extended color light\",\"name\":\"couch light\",\"modelid\":\"LCT001\",\"manufacturername\":\"Philips\",\"uniqueid\":\"52e49aa1-f0b2-4887-8ffc-37e15803edb8\",\"swversion\":\"65003148\",\"pointsymbol\":{\"1\":\"none\",\"2\":\"none\",\"3\":\"none\",\"4\":\"none\",\"5\":\"none\",\"6\":\"none\",\"7\":\"none\",\"8\":\"none\"}},\"c876ba4b-1f7c-40fa-9bdd-c4a4402e66d9\":{\"state\":{\"on\":false,\"bri\":254,\"hue\":15823,\"sat\":88,\"effect\":\"none\",\"ct\":313,\"alert\":\"none\",\"colormode\":\"ct\",\"reachable\":true,\"xy\":[0.4255,0.3998]},\"type\":\"Extended color light\",\"name\":\"lamp\",\"modelid\":\"LCT001\",\"manufacturername\":\"Philips\",\"uniqueid\":\"c876ba4b-1f7c-40fa-9bdd-c4a4402e66d9\",\"swversion\":\"65003148\",\"pointsymbol\":{\"1\":\"none\",\"2\":\"none\",\"3\":\"none\",\"4\":\"none\",\"5\":\"none\",\"6\":\"none\",\"7\":\"none\",\"8\":\"none\"}},\"619f2bda-13ea-4c96-916b-a2a506d370ac\":{\"state\":{\"on\":false,\"bri\":254,\"hue\":15823,\"sat\":88,\"effect\":\"none\",\"ct\":313,\"alert\":\"none\",\"colormode\":\"ct\",\"reachable\":true,\"xy\":[0.4255,0.3998]},\"type\":\"Extended color light\",\"name\":\"entry light\",\"modelid\":\"LCT001\",\"manufacturername\":\"Philips\",\"uniqueid\":\"619f2bda-13ea-4c96-916b-a2a506d370ac\",\"swversion\":\"65003148\",\"pointsymbol\":{\"1\":\"none\",\"2\":\"none\",\"3\":\"none\",\"4\":\"none\",\"5\":\"none\",\"6\":\"none\",\"7\":\"none\",\"8\":\"none\"}}}}";
+}
+
+char * upnp_action(char * request)
+{
+    char * response = NULL;
+
+    printf("Upnp action: %s\n\r", request);
+    if (strcmp(request, "setup.xml") == 0) {
+       response = upnp_setup_response();
+    } else if (strcmp(request, "config.json") == 0
+    || strcmp(request, "S6QJ3NqpQzsR6ZFzOBgxSRJPW58C061um8oP8uhf") == 0) {
+        response = upnp_config_response();
+    }
+
+    return response;
+}
+
+#endif

@@ -16,8 +16,9 @@
 #include "wifi.h"
 #include "httpd.h"
 #include "mqtt.h"
-#include "upnp.h"
-
+#ifdef UPNP
+    #include "upnp.h"
+#endif
 #if defined(PIN_RF433_EMITTER) || defined(PIN_RF433_RECEIVER)
     #include "rf433.h"
 #endif
@@ -79,7 +80,10 @@ void user_init(void)
   #endif
 
   xTaskCreate(&httpd_task, "http_server", 1024, NULL, 2, NULL);
+
+  #ifdef UPNP
   xTaskCreate(&upnp_task, "upnp_task", 1024, NULL, 5, NULL);
+  #endif
 }
 
 /*

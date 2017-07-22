@@ -33,8 +33,10 @@ int decode(const char *s, char *dec)
 	return o - dec;
 }
 
-void parse_request(void *data)
+char * parse_request(void *data)
 {
+    char * response = NULL;
+
     // printf("Received data:\n%s\n", (char*) data);
     if (!strncmp(data, "GET ", 4)) {
         char uri[128];
@@ -46,7 +48,7 @@ void parse_request(void *data)
             char * next = str_extract(uri, 0, '/', action) + 1;
             char_replace(next, '/', ' ');
             printf("::::::action: %s :param: %s\n\n", action, next);
-            reducer(action, next);
+            response = reducer(action, next);
         }
         else if (strchr(uri, '?')) {
             char ssid[32], password[64];
@@ -64,6 +66,27 @@ void parse_request(void *data)
             wifi_new_connection(ssid2, password2);
         }
     }
+
+    return response;
+}
+
+char * httpd_get_default_response()
+{
+    static char buf[512];
+    struct sdk_station_config config;
+    sdk_wifi_station_get_config(&config);
+    snprintf(buf, sizeof(buf),
+            "HTTP/1.1 200 OK\r\n"
+            "Content-type: text/html\r\n\r\n"
+            "\
+            <form>\r\n\
+                <label>Wifi SSID</label><br />\r\n\
+                <input name='ssid' placeholder='SSID' value='%s' /><br /><br />\r\n\
+                <label>Wifi password</label><br />\r\n\
+                <input name='password' placeholder='password' value='%s' /><br /><br />\r\n\
+                <button type='submit'>Save</button><br />\r\n\
+            <form>\r\n", config.ssid, config.password);
+    return buf;
 }
 
 void httpd_task(void *pvParameters)
@@ -76,7 +99,7 @@ void httpd_task(void *pvParameters)
     }
     netconn_bind(nc, IP_ADDR_ANY, 80);
     netconn_listen(nc);
-    char buf[512];
+    char * response = NULL;
     while (1) {
         err_t err = netconn_accept(nc, &client);
         if (err == ERR_OK) {
@@ -86,23 +109,12 @@ void httpd_task(void *pvParameters)
                 u16_t len;
                 if (netbuf_data(nb, &data, &len) == ERR_OK) {
                     // printf("Received data:\n%.*s\n", len, (char*) data);
-                    parse_request(data);                         
+                    response = parse_request(data);                         
                 }          
-
-                struct sdk_station_config config;
-                sdk_wifi_station_get_config(&config);
-                snprintf(buf, sizeof(buf),
-                        "HTTP/1.1 200 OK\r\n"
-                        "Content-type: text/html\r\n\r\n"
-                        "\
-                        <form>\
-                            <label>Wifi SSID</label><br />\
-                            <input name='ssid' placeholder='SSID' value='%s' /><br /><br />\
-                            <label>Wifi password</label><br />\
-                            <input name='password' placeholder='password' value='%s' /><br /><br />\
-                            <button type='submit'>Save</button><br />\
-                        <form>", config.ssid, config.password);
-                netconn_write(client, buf, strlen(buf), NETCONN_COPY);
+                if (!response) {
+                    response = httpd_get_default_response();                         
+                }
+                netconn_write(client, response, strlen(response), NETCONN_COPY);
             }
             netbuf_delete(nb);
         }

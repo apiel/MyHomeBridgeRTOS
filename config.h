@@ -36,3 +36,5 @@
 
 // #define DHT_TYPE DHT_TYPE_DHT22
 #define DHT_TYPE DHT_TYPE_DHT11
+
+#define UPNP true

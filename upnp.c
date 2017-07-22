@@ -215,6 +215,30 @@ char * upnp_config_response()
         "}}";
 }
 
+char * upnp_state_response()
+{
+    printf("return state\n");
+    return
+        "HTTP/1.1 200 OK\r\n"
+        "Content-type: application/json\r\n\r\n"
+        "{\"name\": \"kitchen lights\", \"state\": {\"on\": true, \"bri\": 254, \"hue\": 15823, \"sat\": 88, \"effect\": \"none\", \"ct\": 313, \"alert\": \"none\", \"colormode\": \"ct\", \"reachable\": true, \"xy\": [0.4255, 0.3998]}, \"type\": \"Extended color light\", \"modelid\": \"LCT001\", \"manufacturername\": \"Philips\", \"uniqueid\": \"5102d46c-50d5-4bc7-a180-38623e4bbb08\", \"swversion\": \"65003148\", \"pointsymbol\": {\"1\": \"none\", \"2\": \"none\", \"3\": \"none\", \"4\": \"none\", \"5\": \"none\", \"6\": \"none\", \"7\": \"none\", \"8\": \"none\"}}";
+}
+
+char * upnp_update_state(char * request, char * data)
+{
+    char * state = data + strlen(data) - 6; // "false}" or " true}"
+    // printf("change state: %s\n", state);
+    char * light = request + 40;
+    static char response[256];
+    snprintf(response, sizeof(response),
+        "HTTP/1.1 200 OK\r\n"
+        "Content-type: application/json\r\n\r\n"
+        "[{\"success\":{\"%s/on\":%s}]", light, state);
+    // printf("upnp state response: %s\n", response);                    
+
+    return response;
+}
+
 char * upnp_action(char * request, char * data)
 {
     char * response = NULL;
@@ -230,24 +254,11 @@ char * upnp_action(char * request, char * data)
         strncpy(isLight, request, 47);
         // printf("isLight: %s\n", isLight);
         if (strcmp(isLight, "S6QJ3NqpQzsR6ZFzOBgxSRJPW58C061um8oP8uhf/lights") == 0) {
-            // printf("yesssssss\n");
+            // printf("yes it is a light action\n");
             if (strcmp(request + strlen(request) - 5, "state") == 0) {
-                char * state = data + strlen(data) - 6; // "false}" or " true}"
-                // printf("change state: %s\n", state);
-                char * light = request + 40;
-                static char rep[256];
-                snprintf(rep, sizeof(rep),
-                    "HTTP/1.1 200 OK\r\n"
-                    "Content-type: application/json\r\n\r\n"
-                    "[{\"success\":{\"%s/on\":%s}]", light, state);
-                // printf("upnp state response: %s\n", rep);
-                response = rep;
+                response = upnp_update_state(request, data);
             } else {
-                printf("return state\n");
-                return
-                    "HTTP/1.1 200 OK\r\n"
-                    "Content-type: application/json\r\n\r\n"
-                    "{\"name\": \"kitchen lights\", \"state\": {\"on\": true, \"bri\": 254, \"hue\": 15823, \"sat\": 88, \"effect\": \"none\", \"ct\": 313, \"alert\": \"none\", \"colormode\": \"ct\", \"reachable\": true, \"xy\": [0.4255, 0.3998]}, \"type\": \"Extended color light\", \"modelid\": \"LCT001\", \"manufacturername\": \"Philips\", \"uniqueid\": \"5102d46c-50d5-4bc7-a180-38623e4bbb08\", \"swversion\": \"65003148\", \"pointsymbol\": {\"1\": \"none\", \"2\": \"none\", \"3\": \"none\", \"4\": \"none\", \"5\": \"none\", \"6\": \"none\", \"7\": \"none\", \"8\": \"none\"}}";
+                response = upnp_state_response();
             }
         }
     }

@@ -1,9 +1,12 @@
+#include "config.h"
+
+#ifdef PIN_PIR
+
 #include <espressif/esp_common.h>
 #include <esp8266.h>
 #include <string.h>
 #include <lwip/api.h>
 
-#include "config.h"
 #include "mqtt.h"
 
 void pir_task(void *pvParameters)
@@ -38,3 +41,4 @@ void pir_task(void *pvParameters)
     }
 }
 
+#endif

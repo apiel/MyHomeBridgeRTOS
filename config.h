@@ -17,22 +17,22 @@
 #define MQTT_USER NULL
 #define MQTT_PASS NULL
 
-#define PIN_RF433_EMITTER 4 // wemos d2  // bug on boot
-// #define PIN_RF433_EMITTER 0 // wemos d3  // bug on boot
-// #define PIN_RF433_EMITTER 2 // wemos d4 // bug on boot
-// #define PIN_RF433_EMITTER 15 // wemos d8
-// #define PIN_RF433_RECEIVER 5 // wemos d1
-#define PIN_RF433_RECEIVER 12 // wemos d6
-// #define PIN_RF433_RECEIVER 4 // wemos d2
-// #define PIN_DHT 12 // wemos d6
-#define PIN_DHT 5 // wemos d1
-// #define PIN_DHT 4 // wemos d2
-// #define PIN_DHT 2 // wemos d4
-// #define PIN_DHT 0 // wemos d3
-// #define PIN_PIR 0 // wemos d3
-// #define PIN_PIR 14 // wemos d5
-#define PIN_PIR 4 // wemos d2
-// #define PIN_PIR 5 // wemos d1
+// https://community.blynk.cc/uploads/default/original/2X/4/4f9e2245bf4f6698e10530b9060595c893bf49a2.png
+// D0 > GPIO 16
+// D1 > GPIO 5
+// D2 > GPIO 4 
+// D3 > GPIO 0 // when emitter connected bug on boot
+// D4 > GPIO 2 // when emitter connected bug on boot
+// D5 > GPIO 14
+// D6 > GPIO 12
+// D7 > GPIO 13
+// D8 > GPIO 15
+
+#define PIN_RF433_EMITTER 4
+#define PIN_RF433_RECEIVER 12
+#define PIN_DHT 5
+// #define PIN_PIR 4
+#define PHOTORESISTOR true
 
 // #define DHT_TYPE DHT_TYPE_DHT22
 #define DHT_TYPE DHT_TYPE_DHT11

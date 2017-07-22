@@ -1,10 +1,12 @@
+#include "config.h"
+#ifdef PIN_DHT
+
 #include <espressif/esp_common.h>
 #include <dht/dht.h>
 #include <esp8266.h>
 #include <string.h>
 #include <lwip/api.h>
 
-#include "config.h"
 #include "mqtt.h"
 
 void dht_task(void *pvParameters)
@@ -49,3 +51,5 @@ void dht_task(void *pvParameters)
         // vTaskDelay(10000 / portTICK_PERIOD_MS);
     }
 }
+
+#endif

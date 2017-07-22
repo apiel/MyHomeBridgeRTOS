@@ -1,11 +1,13 @@
 // sdk_system_adc_read
 
+#include "config.h"
+#ifdef PHOTORESISTOR
+
 #include <espressif/esp_common.h>
 #include <esp8266.h>
 #include <string.h>
 #include <lwip/api.h>
 
-#include "config.h"
 #include "mqtt.h"
 
 void photoresistor_task(void *pvParameters)
@@ -34,4 +36,6 @@ void photoresistor_task(void *pvParameters)
         vTaskDelay(500 / portTICK_PERIOD_MS);
     }
 }
+
+#endif
 

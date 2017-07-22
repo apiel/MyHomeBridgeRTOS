@@ -3,6 +3,7 @@
         "c++config.h": "c",
         "binders.h": "c",
         "stdio2.h": "c",
-        "mqtt.h": "c"
+        "mqtt.h": "c",
+        "action.h": "c"
     }
 }

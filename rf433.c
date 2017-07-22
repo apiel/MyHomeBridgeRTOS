@@ -1,10 +1,12 @@
+#include "config.h"
+
+#if defined(PIN_RF433_EMITTER) || defined(PIN_RF433_RECEIVER)
 
 #include <espressif/esp_common.h>
 #include <stdlib.h> // abs
 #include <esp8266.h>
 #include <string.h>
 
-#include "config.h"
 #include "rf433.h"
 
 #define PULSE_LOW_LOW 0
@@ -20,6 +22,9 @@ struct RF433protocol rf433protocolss[] = {
 
 uint8_t rf433protocols_count = sizeof(rf433protocolss) / sizeof(rf433protocolss[0]);
 
+#endif
+
+#ifdef PIN_RF433_EMITTER
 
 void rf433_init(void)
 {
@@ -69,8 +74,6 @@ void rf433_action(char * request)
     char * id_protocol_str = strtok(request, " ");
     char * code = strtok(NULL, " ");
 
-    // rf433_send_multi(0, "010001000100000101000100010000010001010001000100000101000001010001000100000101000001010001000001010000010001010001000100010001000");
-
     if (id_protocol_str && code) {
         int id_protocol = atoi(id_protocol_str);
         printf("rf433_action id: %d code: %s\n", id_protocol, code);
@@ -83,6 +86,10 @@ void rf433_action(char * request)
         printf("rf433_action invalid parameters: %s\n", request);
     }
 }
+
+#endif
+
+#ifdef PIN_RF433_RECEIVER
 
 bool diff(long A, long B, int tolerance) {
     return abs(A - B) < tolerance;
@@ -147,11 +154,6 @@ int rf433_get_protocol(unsigned int duration)
 
 void rf433_task(void *pvParameters)
 {
-    // rf433_action("1 0101010101100110010101100110101001010101101001010");
-    // rf433_action("1 0101010101100110010101100110101001010101101001010");
-    // rf433_action("1 0101010101100110010101100110101001010101101001010");
-    // rf433_send_multi(0, "010001000100000101000100010000010001010001000100000101000001010001000100000101000001010001000001010000010001010001000100010001000");
-    // rf433_send_multi(1, "0101010101100110010101100110011010100101010110100");
     gpio_enable(PIN_RF433_RECEIVER, GPIO_INPUT);
     int previous_pin_value = gpio_read(PIN_RF433_RECEIVER);
     unsigned long last_time = micros();
@@ -229,6 +231,8 @@ void rf433_task(void *pvParameters)
         }
     }
 }
+
+#endif
 
 
 // protocol 1

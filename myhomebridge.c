@@ -16,12 +16,22 @@
 #include "wifi.h"
 #include "httpd.h"
 #include "mqtt.h"
-#include "rf433.h"
-#include "dht.h"
-#include "pir.h"
 #include "upnp.h"
-#include "photoresistor.h"
-#include "trigger.h"
+
+#if defined(PIN_RF433_EMITTER) || defined(PIN_RF433_RECEIVER)
+    #include "rf433.h"
+#endif
+#ifdef PIN_DHT
+    #include "dht.h"
+#endif
+#ifdef PIN_PIR
+    #include "pir.h"
+#endif
+#ifdef PHOTORESISTOR
+    #include "photoresistor.h"
+#endif
+
+// #include "trigger.h"
 
 void spiffs_init(void)
 {
@@ -44,23 +54,31 @@ void user_init(void)
   printf("MyHomeBridge version:%s\n", VERSION);
 
   wifi_init(); 
-  ////// wifi_new_connection(WIFI_SSID, WIFI_PASS);
+//   wifi_new_connection(WIFI_SSID, WIFI_PASS);
 
-  spiffs_init();
   mqtt_init();
-  trigger_init();
+//   spiffs_init();
+//   trigger_init();
   
-
+  #if defined(PIN_RF433_EMITTER) || defined(PIN_RF433_RECEIVER)
   rf433_init();
   xTaskCreate(&rf433_task, "rf433_receiver", 1024, NULL, 1, NULL);
+  #endif
 
   publish_queue = xQueueCreate(3, sizeof( struct MQTTMessage * ) );
   xTaskCreate(&mqtt_task, "mqtt_task", 1024, NULL, 4, NULL);  
 
-  xTaskCreate(&httpd_task, "http_server", 1024, NULL, 2, NULL);
+  #ifdef PIN_DHT
   xTaskCreate(&dht_task, "dht_task", 1024, NULL, 5, NULL);
-  ////// xTaskCreate(&pir_task, "pir_task", 1024, NULL, 5, NULL);
+  #endif
+  #ifdef PIN_PIR
+  xTaskCreate(&pir_task, "pir_task", 1024, NULL, 5, NULL);
+  #endif
+  #ifdef PHOTORESISTOR
   xTaskCreate(&photoresistor_task, "photoresistor_task", 1024, NULL, 5, NULL);
+  #endif
+
+  xTaskCreate(&httpd_task, "http_server", 1024, NULL, 2, NULL);
   xTaskCreate(&upnp_task, "upnp_task", 1024, NULL, 5, NULL);
 }
 

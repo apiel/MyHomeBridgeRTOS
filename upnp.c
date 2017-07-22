@@ -1,122 +1,158 @@
-
-#include <espressif/esp_common.h>
-// #include <esp8266.h>
 #include <string.h>
-
-#include <FreeRTOS.h>
-#include <task.h>
-
-// #define LWIP_IGMP 1
-
 #include <lwip/udp.h>
 #include <lwip/igmp.h>
-#include <lwip/dns.h>
+#include <espressif/esp_common.h>
+#include "upnp.h"
 
-#define DNS_MULTICAST_ADDRESS   "239.255.255.250"
+#define UPNP_MCAST_GRP  ("239.255.255.250")
+#define UPNP_MCAST_PORT (1900)
 
-static struct udp_pcb* pcb = NULL;
-static ip_addr_t       gMulticastAddr;
-
-typedef struct rsrc {
-    struct rsrc*    rNext;
-    u16_t     rType;
-    u32_t    rTTL;
-    u16_t    rKeySize;
-    u16_t    rDataSize;
-    char    rData[8];
-} rsrc;
-
-static void update_ipaddr(struct ip_info* ipInfo)
+static const char* get_my_ip(void)
 {
-    rsrc* rp = NULL;
-    while (rp != NULL) {
-        if (rp->rType==DNS_RRTYPE_A) {
-            #ifdef qDebugLog
-                printf("Updating A record for '%s' to %d.%d.%d.%d\n", rp->rData,
-                    ip4_addr1(&ipInfo->ip), ip4_addr2(&ipInfo->ip), ip4_addr3(&ipInfo->ip), ip4_addr4(&ipInfo->ip));
-            #endif
-            memcpy(&rp->rData[rp->rKeySize], &ipInfo->ip, sizeof(ip_addr_t));
+    static char ip[16] = "0.0.0.0";
+    ip[0] = 0;
+    struct ip_info ipinfo;
+    (void) sdk_wifi_get_ip_info(STATION_IF, &ipinfo);
+    snprintf(ip, sizeof(ip), IPSTR, IP2STR(&ipinfo.ip));
+    return (char*) ip;
+}
+
+/**
+  * @brief This function joins a multicast group witht he specified ip/port
+  * @param group_ip the specified multicast group ip
+  * @param group_port the specified multicast port number
+  * @param recv the lwip UDP callback
+  * @retval udp_pcb* or NULL if joining failed
+  */
+static struct udp_pcb* mcast_join_group(char *group_ip, uint16_t group_port, void (* recv)(void * arg, struct udp_pcb * upcb, struct pbuf * p, struct ip_addr * addr, u16_t port))
+{
+    bool status = false;
+    struct udp_pcb *upcb;
+
+    printf("Joining mcast group %s:%d\n", group_ip, group_port);
+    do {
+        upcb = udp_new();
+        if (!upcb) {
+            printf("Error, udp_new failed");
+            break;
         }
-        rp = rp->rNext;
+        udp_bind(upcb, IP_ADDR_ANY, group_port);
+        struct netif* netif = sdk_system_get_netif(STATION_IF);
+        if (!netif) {
+            printf("Error, netif is null");
+            break;
+        }
+        if (!(netif->flags & NETIF_FLAG_IGMP)) {
+            netif->flags |= NETIF_FLAG_IGMP;
+            igmp_start(netif);
+        }
+        ip_addr_t ipgroup;
+        ipaddr_aton(group_ip, &ipgroup);
+        err_t err = igmp_joingroup(&netif->ip_addr, &ipgroup);
+        if(ERR_OK != err) {
+            printf("Failed to join multicast group: %d", err);
+            break;
+        }
+        status = true;
+    } while(0);
+
+    if (status) {
+        printf("Join successs\n");
+        udp_recv(upcb, recv, upcb);
+    } else {
+        if (upcb) {
+            udp_remove(upcb);
+        }
+        upcb = NULL;
+    }
+    return upcb;
+}
+
+static void send(struct udp_pcb *upcb, struct ip_addr *addr, u16_t port)
+{
+    struct pbuf *p;
+    char msg[500];
+    // snprintf(msg, sizeof(msg),
+    //     "HTTP/1.1 200 OK\r\n"
+    //     "CACHE-CONTROL: max-age=86400\r\n"
+    //     "DATE: Fri, 15 Apr 2016 04:56:29 GMT\r\n"
+    //     "EXT:\r\n"
+    //     "LOCATION: http://%s:80/setup.xml\r\n"
+    //     "OPT: \"http://schemas.upnp.org/upnp/1/0/\"; ns=01\r\n"
+    //     "01-NLS: b9200ebb-736d-4b93-bf03-835149d13983\r\n"
+    //     "SERVER: Unspecified, UPnP/1.0, Unspecified\r\n"
+    //     "ST: urn:Belkin:device:**\r\n"
+    //     "USN: uuid:Socket-1_0-38323636-4558-4dda-9188-cda0e6cc3dc0::urn:Belkin:device:**\r\n"
+    //     "X-User-Agent: redsonic\r\n\r\n", get_my_ip());
+
+    snprintf(msg, sizeof(msg),
+        "HTTP/1.1 200 OK\r\n"
+        "NT: urn:schemas-upnp-org:device:basic:1\r\n"
+        "SERVER: node.js/0.10.28 UPnP/1.1\r\n"
+        "ST: urn:schemas-upnp-org:device:basic:1\r\n"
+        "USN: uuid:Socket-1_0-221438K0100073::urn:Belkin:device:**\r\n"
+        "LOCATION: http://192.168.0.13:80/upnp/amazon-ha-bridge/setup.xml\r\n"
+        "HOST: 239.255.255.250:1900\r\n"
+        "CACHE-CONTROL: max-age=1800\r\n"
+        "EXT: \r\n"
+        "DATE: Fri, 21 Jul 2017 17:58:41 GMT\r\n\r\n", get_my_ip());       
+
+    p = pbuf_alloc(PBUF_TRANSPORT, strlen(msg)+1, PBUF_RAM);
+
+    if (!p) {
+        printf("Failed to allocate transport buffer\n");
+    } else {
+        memcpy(p->payload, msg, strlen(msg)+1);    
+        err_t err = udp_sendto(upcb, p, addr, port);
+        if (err < 0) {
+            printf("Error sending message: %s (%d)\n", lwip_strerr(err), err);
+        } else {
+            printf("Sent message '%s'\n", msg);
+        }    
+        pbuf_free(p);
     }
 }
 
-static void recvFn(void *arg, struct udp_pcb *pcb, struct pbuf *p, struct ip_addr *addr, u16_t port)
+/**
+  * @brief This function is called when an UDP datagrm has been received on the port UDP_PORT.
+  * @param arg user supplied argument (udp_pcb.recv_arg)
+  * @param pcb the udp_pcb which received data
+  * @param p the packet buffer that was received
+  * @param addr the remote IP address from which the packet was received
+  * @param port the remote port from which the packet was received
+  * @retval None
+  */
+static void receive_callback(void *arg, struct udp_pcb *upcb, struct pbuf *p, struct ip_addr *addr, u16_t port)
 {
-    printf(">>> recv..\n");
+    if (p) {
+        printf("Msg received port:%d len:%d\n", port, p->len);
+        uint8_t *buf = (uint8_t*) p->payload;
+        printf("Msg received port:%d len:%d\nbuf: %s\n", port, p->len, buf);
+        
+        send(upcb, addr, port);
+
+        pbuf_free(p);
+    }
 }
 
-bool ok = false;
-
-void yo() 
+/**
+  * @brief Initialize the upnp server
+  * @retval true if init was succcessful
+  */
+bool upnp_server_init(void)
 {
-    struct ip_info ipInfo;
-
-    printf("********** Try to load upnp\n\r");
-
-    ipaddr_aton(DNS_MULTICAST_ADDRESS, &gMulticastAddr);
-
-    update_ipaddr(&ipInfo);
-
-    pcb = udp_new();
-    if (!pcb) {
-        printf(">>> mDNS_start: udp_new failed\n");
-        return;
-    }
-    
-    if (igmp_joingroup(&ipInfo.ip, &gMulticastAddr) != ERR_OK) {
-        printf(">>> mDNS_start: igmp_join failed\n");
-        return;
-    }
-
-    if (udp_bind(pcb, IP_ADDR_ANY, 1900) != ERR_OK) {
-        printf(">>> mDNS_start: udp_bind failed\n");
-        return;
-    }
-    
-    udp_recv(pcb, recvFn, NULL);
-
-    ok = true;
-}
-
-void yo2()
-{
-    printf("********** Try to load upnp2\n\r");
-
-    ip_addr_t ifaddr;
-    // ifaddr.addr = (uint32_t) interfaceAddr;
-    IP4_ADDR(&ifaddr, 192, 168, 0, 23);
-    ip_addr_t multicast_addr;
-    // multicast_addr.addr = (uint32_t) multicast;
-    IP4_ADDR(&ifaddr, 239, 255, 255, 250);
-
-    err_t err;
-    if ((err = igmp_joingroup(&ifaddr, &multicast_addr)) != ERR_OK) {
-        printf(">>> mDNS_start: igmp_joingroup failed %d\n", err);
-        return;
-    }
-
-    pcb = udp_new();
-    if (!pcb) {
-        printf(">>> mDNS_start: udp_new failed\n");
-        return;
-    }
-
-    udp_recv(pcb, recvFn, NULL);
-    if ((err = udp_bind(pcb, IP_ADDR_ANY, 1900)) != ERR_OK) {
-        printf(">>> mDNS_start: udp_bind failed %d\n", err);
-        return;
-    }
-
-    ok = true;
+    printf("Upnp server init\n\r");
+    struct udp_pcb *upcb = mcast_join_group(UPNP_MCAST_GRP, UPNP_MCAST_PORT, receive_callback);
+    return (upcb != NULL);
 }
 
 void upnp_task(void *pvParameters)
 {
+    bool ok = false;
     printf("Upnp task\n\r");
 
     while (1) { 
-        if (!ok) yo2();
+        if (!ok) ok = upnp_server_init();
         vTaskDelay(1000);
     }   
 }

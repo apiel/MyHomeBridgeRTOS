@@ -8,7 +8,10 @@
 #include <spiffs.h>
 #include <esp_spiffs.h>
 
-#include "rf433.h"
+#ifdef PIN_RF433_EMITTER
+    #include "rf433.h"
+#endif
+
 #include "utils.h"
 #include "wget.h"
 
@@ -49,16 +52,18 @@ void read_actions(char * name)
 // this could be call from an internal queue
 void reducer(char * action, char * params)
 {
-    if (strcmp(action, "rf433") == 0) {
+    if (strcmp(action, "wget") == 0) {
+        wget(params);
+    }
+    #ifdef PIN_RF433_EMITTER
+    else if (strcmp(action, "rf433") == 0) {
         rf433_action(params);
     }
+    #endif
     else if (strcmp(action, "actions") == 0) {
         // run_actions(params);
         read_actions(params);
-    }    
-    else if (strcmp(action, "wget") == 0) {
-        wget(params);
-    }    
+    } 
     else if (strcmp(action, "#") == 0) {
         printf("-> %s\n", params);
     }    

@@ -43,8 +43,9 @@
 
 #define LWIP_IGMP 1
 #include <stdint.h>
+#include <esp/hwrand.h>
+#define LWIP_RAND hwrand
 
-#define LWIP_RAND()                         rand()
 /*
    -----------------------------------------------
    ---------- Platform specific locking ----------

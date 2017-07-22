@@ -9,7 +9,7 @@
 #include "config.h"
 #include "mqtt.h"
 #include "action.h"
-#include "trigger.h"
+// #include "trigger.h"
 
 #define topics_size 24
 
@@ -105,7 +105,7 @@ static void  topic_received(mqtt_message_data_t *md)
     // should we provide the whole topic to reducer??
     reducer(action, msg);
     // but actually we should be able to trigger even if not connected!!
-    trigger(md->topic->lenstring.data, msg);
+    // trigger(md->topic->lenstring.data, msg);
 }
 
 void subscribe_to_topics() {

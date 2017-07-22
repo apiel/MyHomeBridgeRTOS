@@ -18,10 +18,6 @@
 #include "wget.h"
 #include "action.h"
 
-#ifdef UPNP
-    #include "upnp.h"
-#endif
-
 void read_actions(char * name)
 {
     const int max_size = 1024;
@@ -55,20 +51,14 @@ void read_actions(char * name)
 }
 
 // this could be call from an internal queue
-char * reducer(char * action, char * params)
+void reducer(char * action, char * params)
 {
-    char * response = NULL;
     if (strcmp(action, "wget") == 0) {
         wget(params);
     }
     #ifdef PIN_RF433_EMITTER
     else if (strcmp(action, "rf433") == 0) {
         rf433_action(params);
-    }
-    #endif
-    #ifdef UPNP
-    else if (strcmp(action, "api") == 0) {
-        response = upnp_action(params);
     }
     #endif
     else if (strcmp(action, "actions") == 0) {
@@ -81,6 +71,4 @@ char * reducer(char * action, char * params)
     else {
         printf("This action is not supported.\n");
     }
-
-    return response;
 }

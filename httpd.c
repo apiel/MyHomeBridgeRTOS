@@ -5,6 +5,11 @@
 #include "wifi.h"
 #include "action.h"
 #include "utils.h"
+#include "config.h"
+
+#ifdef UPNP
+    #include "upnp.h"
+#endif
 
 inline int ishex(int x)
 {
@@ -38,7 +43,7 @@ char * parse_request(void *data)
     char * response = NULL;
 
     // printf("Received data:\n%s\n", (char*) data);
-    if (!strncmp(data, "GET ", 4)) {
+    if (!strncmp(data, "GET ", 4) || !strncmp(data, "PUT ", 4)) {
         char uri[128];
         str_extract(data, '/', ' ', uri);
         printf("uri: %s\n", uri);
@@ -46,9 +51,17 @@ char * parse_request(void *data)
         if (strchr(uri, '/')) {
             char action[32];
             char * next = str_extract(uri, 0, '/', action) + 1;
-            char_replace(next, '/', ' ');
-            printf("::::::action: %s :param: %s\n\n", action, next);
-            response = reducer(action, next);
+            #ifdef UPNP
+            if (strcmp(action, "api") == 0) {
+                response = upnp_action(next, data);
+            } else {
+            #endif            
+                char_replace(next, '/', ' ');
+                printf("::::::action: %s :param: %s\n\n", action, next);
+                reducer(action, next);
+            #ifdef UPNP
+            }
+            #endif
         }
         else if (strchr(uri, '?')) {
             char ssid[32], password[64];
@@ -118,7 +131,7 @@ void httpd_task(void *pvParameters)
             }
             netbuf_delete(nb);
         }
-        printf("Closing connection\n");
+        // printf("Closing connection\n");
         netconn_close(client);
         netconn_delete(client);
     }

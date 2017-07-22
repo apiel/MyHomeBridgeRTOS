@@ -1,2 +1,2 @@
 
-char * reducer(char * action, char * params);
+void reducer(char * action, char * params);

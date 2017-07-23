@@ -266,14 +266,10 @@ char * upnp_state_response()
         "{\"name\": \"generic\", \"state\": {\"on\": true, \"bri\": 254, \"hue\": 15823, \"sat\": 88, \"effect\": \"none\", \"ct\": 313, \"alert\": \"none\", \"colormode\": \"ct\", \"reachable\": true, \"xy\": [0.4255, 0.3998]}, \"type\": \"Extended color light\", \"modelid\": \"LCT001\", \"manufacturername\": \"Philips\", \"uniqueid\": \"5102d46c-50d5-4bc7-a180-38623e4bbb08\", \"swversion\": \"65003148\", \"pointsymbol\": {\"1\": \"none\", \"2\": \"none\", \"3\": \"none\", \"4\": \"none\", \"5\": \"none\", \"6\": \"none\", \"7\": \"none\", \"8\": \"none\"}}";
 }
 
-// {"bri":127} // not supported yet, need to respond with bri instead of on
-// {"on": true}
-char * upnp_update_state(char * request, char * data)
+char * upnp_update_state(char * request, char * data, char * state)
 {
-    printf("update state data(%s): %s\n", request, data);
     char strIndex[2];
     strncpy(strIndex, request + strlen(request) - 8, 2);
-    char * state = data + strlen(data) - 6; // "false}" or " true}"
     u_int index = atoi(strIndex);
     if (index < hueItems_count) {
         printf("change state (%d - %s): %s\n", index, hueItems[index].name, state);
@@ -285,7 +281,15 @@ char * upnp_update_state(char * request, char * data)
         }
         reducer(hueItems[index].action, params);
     }
-    
+}
+
+// {"bri":127} // not supported yet, need to respond with bri instead of on
+// {"on": true}
+char * upnp_update_state_response(char * request, char * data)
+{
+    printf("update state data(%s): %s\n", request, data);
+    char * state = data + strlen(data) - 6; // "false}" or " true}"
+    upnp_update_state(request, data, state);
 
     char * light = request + 40;
     static char response[256];
@@ -315,7 +319,7 @@ char * upnp_action(char * request, char * data)
         if (strcmp(isLight, "S6QJ3NqpQzsR6ZFzOBgxSRJPW58C061um8oP8uhf/lights") == 0) {
             // printf("yes it is a light action\n");
             if (strcmp(request + strlen(request) - 5, "state") == 0) {
-                response = upnp_update_state(request, data);
+                response = upnp_update_state_response(request, data);
             } else {
                 response = upnp_state_response();
             }

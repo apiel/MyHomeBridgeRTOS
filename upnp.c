@@ -2,14 +2,38 @@
 
 #ifdef UPNP
 
+#include <unistd.h>
 #include <string.h>
 #include <lwip/udp.h>
 #include <lwip/igmp.h>
+#include <lwip/api.h>
 #include <espressif/esp_common.h>
+
 #include "upnp.h"
+#include "action.h"
 
 #define UPNP_MCAST_GRP  ("239.255.255.250")
 #define UPNP_MCAST_PORT (1900)
+
+struct HUEitems
+{
+    char * name;
+    char * action;
+    char * on;
+    char * off;
+};
+
+struct HUEitems hueItems[] = {
+    { "windows lights", "rf433", "1 0101010101100101011001100110101001010101010110100", "1 0101010101100101011001100110101001010101101001010"},
+    { "bed lights", "rf433", "1 0101010101100101011001100110011010100101010110100", "1 0101010101100101011001100110011010100101101001010"},
+    { "room lights", "rf433", "1 0101010101100101011001100110011001011010010110100", "1 0101010101100101011001100110011001011010101001010"},
+    { "kitchen lights", "rf433", "1 0101010101100110010101100110101001010101010110100", "1 0101010101100110010101100110101001010101101001010"},
+    { "toilet lights", "rf433", "1 0101010101100110010101100110011001011010010110100", "1 0101010101100110010101100110011001011010101001010"},    
+    { "wall lights", "rf433", "1 0101010101100110010101100110011010100101010110100", "1 0101010101100110010101100110011010100101101001010"}
+};
+
+uint8_t hueItems_count = sizeof(hueItems) / sizeof(hueItems[0]);
+
 
 static const char* get_my_ip(void)
 {
@@ -101,7 +125,7 @@ static void send(struct udp_pcb *upcb, struct ip_addr *addr, u16_t port)
         } 
         // else {
         //     printf("Sent message '%s'\n", msg);
-        // }    
+        // }
         pbuf_free(p);
     }
 }
@@ -203,16 +227,34 @@ char * upnp_setup_response()
 
 char * upnp_config_response()
 {
-    return
-        "{\"lights\":{"
-        "\"5102d46c-50d5-4bc7-a180-38623e4bbb00\": {\"name\": \"windows lights\", \"state\": {\"on\": false, \"bri\": 254, \"hue\": 15823, \"sat\": 88, \"effect\": \"none\", \"ct\": 313, \"alert\": \"none\", \"colormode\": \"ct\", \"reachable\": true, \"xy\": [0.4255, 0.3998]}, \"type\": \"Extended color light\", \"modelid\": \"LCT001\", \"manufacturername\": \"Philips\", \"uniqueid\": \"5102d46c-50d5-4bc7-a180-38623e4bbb08\", \"swversion\": \"65003148\", \"pointsymbol\": {\"1\": \"none\", \"2\": \"none\", \"3\": \"none\", \"4\": \"none\", \"5\": \"none\", \"6\": \"none\", \"7\": \"none\", \"8\": \"none\"}},"
-        "\"5102d46c-50d5-4bc7-a180-38623e4bbb01\": {\"name\": \"bed lights\", \"state\": {\"on\": false, \"bri\": 254, \"hue\": 15823, \"sat\": 88, \"effect\": \"none\", \"ct\": 313, \"alert\": \"none\", \"colormode\": \"ct\", \"reachable\": true, \"xy\": [0.4255, 0.3998]}, \"type\": \"Extended color light\", \"modelid\": \"LCT001\", \"manufacturername\": \"Philips\", \"uniqueid\": \"5102d46c-50d5-4bc7-a180-38623e4bbb08\", \"swversion\": \"65003148\", \"pointsymbol\": {\"1\": \"none\", \"2\": \"none\", \"3\": \"none\", \"4\": \"none\", \"5\": \"none\", \"6\": \"none\", \"7\": \"none\", \"8\": \"none\"}},"
-        "\"5102d46c-50d5-4bc7-a180-38623e4bbb02\": {\"name\": \"room lights\", \"state\": {\"on\": false, \"bri\": 254, \"hue\": 15823, \"sat\": 88, \"effect\": \"none\", \"ct\": 313, \"alert\": \"none\", \"colormode\": \"ct\", \"reachable\": true, \"xy\": [0.4255, 0.3998]}, \"type\": \"Extended color light\", \"modelid\": \"LCT001\", \"manufacturername\": \"Philips\", \"uniqueid\": \"5102d46c-50d5-4bc7-a180-38623e4bbb08\", \"swversion\": \"65003148\", \"pointsymbol\": {\"1\": \"none\", \"2\": \"none\", \"3\": \"none\", \"4\": \"none\", \"5\": \"none\", \"6\": \"none\", \"7\": \"none\", \"8\": \"none\"}},"
-        "\"5102d46c-50d5-4bc7-a180-38623e4bbb03\": {\"name\": \"kitchen lights\", \"state\": {\"on\": false, \"bri\": 254, \"hue\": 15823, \"sat\": 88, \"effect\": \"none\", \"ct\": 313, \"alert\": \"none\", \"colormode\": \"ct\", \"reachable\": true, \"xy\": [0.4255, 0.3998]}, \"type\": \"Extended color light\", \"modelid\": \"LCT001\", \"manufacturername\": \"Philips\", \"uniqueid\": \"5102d46c-50d5-4bc7-a180-38623e4bbb08\", \"swversion\": \"65003148\", \"pointsymbol\": {\"1\": \"none\", \"2\": \"none\", \"3\": \"none\", \"4\": \"none\", \"5\": \"none\", \"6\": \"none\", \"7\": \"none\", \"8\": \"none\"}},"
-        "\"5102d46c-50d5-4bc7-a180-38623e4bbb04\": {\"name\": \"toilet lights\", \"state\": {\"on\": false, \"bri\": 254, \"hue\": 15823, \"sat\": 88, \"effect\": \"none\", \"ct\": 313, \"alert\": \"none\", \"colormode\": \"ct\", \"reachable\": true, \"xy\": [0.4255, 0.3998]}, \"type\": \"Extended color light\", \"modelid\": \"LCT001\", \"manufacturername\": \"Philips\", \"uniqueid\": \"5102d46c-50d5-4bc7-a180-38623e4bbb08\", \"swversion\": \"65003148\", \"pointsymbol\": {\"1\": \"none\", \"2\": \"none\", \"3\": \"none\", \"4\": \"none\", \"5\": \"none\", \"6\": \"none\", \"7\": \"none\", \"8\": \"none\"}},"
-        "\"5102d46c-50d5-4bc7-a180-38623e4bbb05\": {\"name\": \"wall lights\", \"state\": {\"on\": false, \"bri\": 254, \"hue\": 15823, \"sat\": 88, \"effect\": \"none\", \"ct\": 313, \"alert\": \"none\", \"colormode\": \"ct\", \"reachable\": true, \"xy\": [0.4255, 0.3998]}, \"type\": \"Extended color light\", \"modelid\": \"LCT001\", \"manufacturername\": \"Philips\", \"uniqueid\": \"5102d46c-50d5-4bc7-a180-38623e4bbb08\", \"swversion\": \"65003148\", \"pointsymbol\": {\"1\": \"none\", \"2\": \"none\", \"3\": \"none\", \"4\": \"none\", \"5\": \"none\", \"6\": \"none\", \"7\": \"none\", \"8\": \"none\"}},"
-        "\"5102d46c-50d5-4bc7-a180-38623e4bbb06\": {\"name\": \"store\", \"state\": {\"on\": false, \"bri\": 254, \"hue\": 15823, \"sat\": 88, \"effect\": \"none\", \"ct\": 313, \"alert\": \"none\", \"colormode\": \"ct\", \"reachable\": true, \"xy\": [0.4255, 0.3998]}, \"type\": \"Extended color light\", \"modelid\": \"LCT001\", \"manufacturername\": \"Philips\", \"uniqueid\": \"5102d46c-50d5-4bc7-a180-38623e4bbb08\", \"swversion\": \"65003148\", \"pointsymbol\": {\"1\": \"none\", \"2\": \"none\", \"3\": \"none\", \"4\": \"none\", \"5\": \"none\", \"6\": \"none\", \"7\": \"none\", \"8\": \"none\"}}"
-        "}}";
+    static char item[1024];
+    // static char response[sizeof(item)* sizeof(hueItems) / sizeof(hueItems[0])];
+    static char response[4000];
+    strcpy(response, "{\"lights\":{");
+    for (int index = 0; index < hueItems_count; index++) {
+        if (index > 0) {
+            strcat(response, ",");
+        }
+        snprintf(item, sizeof(item),
+            "\"helo-0%d\": {\"name\": \"%s\", \"state\": {\"on\": false, \"bri\": 254, \"hue\": 15823, \"sat\": 88, \"effect\": \"none\", \"ct\": 313, \"alert\": \"none\", \"colormode\": \"ct\", \"reachable\": true, \"xy\": [0.4255, 0.3998]}, \"type\": \"Extended color light\", \"modelid\": \"LCT001\", \"manufacturername\": \"Philips\", \"uniqueid\": \"helo-0%d\", \"swversion\": \"65003148\", \"pointsymbol\": {\"1\": \"none\", \"2\": \"none\", \"3\": \"none\", \"4\": \"none\", \"5\": \"none\", \"6\": \"none\", \"7\": \"none\", \"8\": \"none\"}}",
+            index, hueItems[index].name, index);
+        strcat(response, item);
+    }
+    strcat(response, "}}");
+
+    // printf("config response: %s\n", response);
+    return response;
+
+    // return
+    //     "{\"lights\":{"
+    //     "\"5102d46c-50d5-4bc7-a180-38623e4bbb00\": {\"name\": \"windows lights\", \"state\": {\"on\": false, \"bri\": 254, \"hue\": 15823, \"sat\": 88, \"effect\": \"none\", \"ct\": 313, \"alert\": \"none\", \"colormode\": \"ct\", \"reachable\": true, \"xy\": [0.4255, 0.3998]}, \"type\": \"Extended color light\", \"modelid\": \"LCT001\", \"manufacturername\": \"Philips\", \"uniqueid\": \"5102d46c-50d5-4bc7-a180-38623e4bbb08\", \"swversion\": \"65003148\", \"pointsymbol\": {\"1\": \"none\", \"2\": \"none\", \"3\": \"none\", \"4\": \"none\", \"5\": \"none\", \"6\": \"none\", \"7\": \"none\", \"8\": \"none\"}},"
+    //     "\"HELO-1\": {\"name\": \"bed lights\", \"state\": {\"on\": false, \"bri\": 254, \"hue\": 15823, \"sat\": 88, \"effect\": \"none\", \"ct\": 313, \"alert\": \"none\", \"colormode\": \"ct\", \"reachable\": true, \"xy\": [0.4255, 0.3998]}, \"type\": \"Extended color light\", \"modelid\": \"LCT001\", \"manufacturername\": \"Philips\", \"uniqueid\": \"5102d46c-50d5-4bc7-a180-38623e4bbb08\", \"swversion\": \"65003148\", \"pointsymbol\": {\"1\": \"none\", \"2\": \"none\", \"3\": \"none\", \"4\": \"none\", \"5\": \"none\", \"6\": \"none\", \"7\": \"none\", \"8\": \"none\"}},"
+    //     "\"5102d46c-50d5-4bc7-a180-38623e4bbb02\": {\"name\": \"room lights\", \"state\": {\"on\": false, \"bri\": 254, \"hue\": 15823, \"sat\": 88, \"effect\": \"none\", \"ct\": 313, \"alert\": \"none\", \"colormode\": \"ct\", \"reachable\": true, \"xy\": [0.4255, 0.3998]}, \"type\": \"Extended color light\", \"modelid\": \"LCT001\", \"manufacturername\": \"Philips\", \"uniqueid\": \"5102d46c-50d5-4bc7-a180-38623e4bbb08\", \"swversion\": \"65003148\", \"pointsymbol\": {\"1\": \"none\", \"2\": \"none\", \"3\": \"none\", \"4\": \"none\", \"5\": \"none\", \"6\": \"none\", \"7\": \"none\", \"8\": \"none\"}},"
+    //     "\"5102d46c-50d5-4bc7-a180-38623e4bbb03\": {\"name\": \"kitchen lights\", \"state\": {\"on\": false, \"bri\": 254, \"hue\": 15823, \"sat\": 88, \"effect\": \"none\", \"ct\": 313, \"alert\": \"none\", \"colormode\": \"ct\", \"reachable\": true, \"xy\": [0.4255, 0.3998]}, \"type\": \"Extended color light\", \"modelid\": \"LCT001\", \"manufacturername\": \"Philips\", \"uniqueid\": \"5102d46c-50d5-4bc7-a180-38623e4bbb08\", \"swversion\": \"65003148\", \"pointsymbol\": {\"1\": \"none\", \"2\": \"none\", \"3\": \"none\", \"4\": \"none\", \"5\": \"none\", \"6\": \"none\", \"7\": \"none\", \"8\": \"none\"}},"
+    //     "\"5102d46c-50d5-4bc7-a180-38623e4bbb04\": {\"name\": \"toilet lights\", \"state\": {\"on\": false, \"bri\": 254, \"hue\": 15823, \"sat\": 88, \"effect\": \"none\", \"ct\": 313, \"alert\": \"none\", \"colormode\": \"ct\", \"reachable\": true, \"xy\": [0.4255, 0.3998]}, \"type\": \"Extended color light\", \"modelid\": \"LCT001\", \"manufacturername\": \"Philips\", \"uniqueid\": \"5102d46c-50d5-4bc7-a180-38623e4bbb08\", \"swversion\": \"65003148\", \"pointsymbol\": {\"1\": \"none\", \"2\": \"none\", \"3\": \"none\", \"4\": \"none\", \"5\": \"none\", \"6\": \"none\", \"7\": \"none\", \"8\": \"none\"}},"
+    //     "\"5102d46c-50d5-4bc7-a180-38623e4bbb05\": {\"name\": \"wall lights\", \"state\": {\"on\": false, \"bri\": 254, \"hue\": 15823, \"sat\": 88, \"effect\": \"none\", \"ct\": 313, \"alert\": \"none\", \"colormode\": \"ct\", \"reachable\": true, \"xy\": [0.4255, 0.3998]}, \"type\": \"Extended color light\", \"modelid\": \"LCT001\", \"manufacturername\": \"Philips\", \"uniqueid\": \"5102d46c-50d5-4bc7-a180-38623e4bbb08\", \"swversion\": \"65003148\", \"pointsymbol\": {\"1\": \"none\", \"2\": \"none\", \"3\": \"none\", \"4\": \"none\", \"5\": \"none\", \"6\": \"none\", \"7\": \"none\", \"8\": \"none\"}},"
+    //     "\"5102d46c-50d5-4bc7-a180-38623e4bbb06\": {\"name\": \"store\", \"state\": {\"on\": false, \"bri\": 254, \"hue\": 15823, \"sat\": 88, \"effect\": \"none\", \"ct\": 313, \"alert\": \"none\", \"colormode\": \"ct\", \"reachable\": true, \"xy\": [0.4255, 0.3998]}, \"type\": \"Extended color light\", \"modelid\": \"LCT001\", \"manufacturername\": \"Philips\", \"uniqueid\": \"5102d46c-50d5-4bc7-a180-38623e4bbb08\", \"swversion\": \"65003148\", \"pointsymbol\": {\"1\": \"none\", \"2\": \"none\", \"3\": \"none\", \"4\": \"none\", \"5\": \"none\", \"6\": \"none\", \"7\": \"none\", \"8\": \"none\"}}"
+    //     "}}";
 }
 
 char * upnp_state_response()
@@ -221,13 +263,30 @@ char * upnp_state_response()
     return
         "HTTP/1.1 200 OK\r\n"
         "Content-type: application/json\r\n\r\n"
-        "{\"name\": \"kitchen lights\", \"state\": {\"on\": true, \"bri\": 254, \"hue\": 15823, \"sat\": 88, \"effect\": \"none\", \"ct\": 313, \"alert\": \"none\", \"colormode\": \"ct\", \"reachable\": true, \"xy\": [0.4255, 0.3998]}, \"type\": \"Extended color light\", \"modelid\": \"LCT001\", \"manufacturername\": \"Philips\", \"uniqueid\": \"5102d46c-50d5-4bc7-a180-38623e4bbb08\", \"swversion\": \"65003148\", \"pointsymbol\": {\"1\": \"none\", \"2\": \"none\", \"3\": \"none\", \"4\": \"none\", \"5\": \"none\", \"6\": \"none\", \"7\": \"none\", \"8\": \"none\"}}";
+        "{\"name\": \"generic\", \"state\": {\"on\": true, \"bri\": 254, \"hue\": 15823, \"sat\": 88, \"effect\": \"none\", \"ct\": 313, \"alert\": \"none\", \"colormode\": \"ct\", \"reachable\": true, \"xy\": [0.4255, 0.3998]}, \"type\": \"Extended color light\", \"modelid\": \"LCT001\", \"manufacturername\": \"Philips\", \"uniqueid\": \"5102d46c-50d5-4bc7-a180-38623e4bbb08\", \"swversion\": \"65003148\", \"pointsymbol\": {\"1\": \"none\", \"2\": \"none\", \"3\": \"none\", \"4\": \"none\", \"5\": \"none\", \"6\": \"none\", \"7\": \"none\", \"8\": \"none\"}}";
 }
 
+// {"bri":127} // not supported yet, need to respond with bri instead of on
+// {"on": true}
 char * upnp_update_state(char * request, char * data)
 {
+    printf("update state data(%s): %s\n", request, data);
+    char strIndex[2];
+    strncpy(strIndex, request + strlen(request) - 8, 2);
     char * state = data + strlen(data) - 6; // "false}" or " true}"
-    // printf("change state: %s\n", state);
+    u_int index = atoi(strIndex);
+    if (index < hueItems_count) {
+        printf("change state (%d - %s): %s\n", index, hueItems[index].name, state);
+        char params[512];
+        if (strcmp(state, " true}") == 0) {
+            strcpy(params, hueItems[index].on);
+        } else {
+            strcpy(params, hueItems[index].off);
+        }
+        reducer(hueItems[index].action, params);
+    }
+    
+
     char * light = request + 40;
     static char response[256];
     snprintf(response, sizeof(response),

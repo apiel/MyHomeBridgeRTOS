@@ -7,15 +7,20 @@
 
 #define AP_PSK "myhomebridge" // between 8 and 63 ASCII-encoded characters
 
+// #define CAYENNE true
 
-// #define MQTT_HOST ("192.168.0.13")
-// #define MQTT_HOST ("51.254.38.158")
-#define MQTT_HOST ("vps.alexparadise.com")
-// #define MQTT_HOST ("test.mosquitto.org")
+#ifdef CAYENNE
+    #define MQTT_USER "6c408f50-6e0d-11e7-b9da-0dc7f11adcec"
+    #define MQTT_PASS "72b66139ae2f0f712459fccb7b35c5c32ff7e164"
+    #define MQTT_CLIENT_ID "ee3bbc70-6fdc-11e7-9c62-d3cf878e1bfa"
+    #define MQTT_HOST ("mqtt.mydevices.com")
+#else
+    #define MQTT_USER NULL
+    #define MQTT_PASS NULL
+    #define MQTT_HOST ("vps.alexparadise.com")
+#endif
+
 #define MQTT_PORT 1883
-
-#define MQTT_USER NULL
-#define MQTT_PASS NULL
 
 // https://community.blynk.cc/uploads/default/original/2X/4/4f9e2245bf4f6698e10530b9060595c893bf49a2.png
 // D0 > GPIO 16

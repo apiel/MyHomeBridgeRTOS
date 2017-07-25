@@ -148,7 +148,11 @@ void  mqtt_task(void *pvParameters)
 
         data.willFlag       = 0;
         data.MQTTVersion    = 3;
+        #ifdef MQTT_CLIENT_ID
+        data.clientID.cstring   = MQTT_CLIENT_ID;
+        #else
         data.clientID.cstring   = mqtt_client_id;
+        #endif
         data.username.cstring   = MQTT_USER;
         data.password.cstring   = MQTT_PASS;
         data.keepAliveInterval  = 10;

@@ -18,8 +18,26 @@
 #include "wget.h"
 #include "action.h"
 
+
+//  void yoyo()
+//  {
+//    spiffs_DIR d;
+//    struct spiffs_dirent e;
+//    struct spiffs_dirent *pe = &e;
+//    char base[8]; // actions_
+ 
+//    printf("files files\n");
+
+//    SPIFFS_opendir(&fs, "/", &d);
+//    while ((pe = SPIFFS_readdir(&d, pe))) {
+//      printf("action file: %s [%04x] size:%i\n", pe->name, pe->obj_id, pe->size);
+//    }
+//    SPIFFS_closedir(&d);    
+//  }
+
 void read_actions(char * name)
-{
+{ 
+    // yoyo();
     const int max_size = 1024;
     char buf[max_size];
     uint8_t c[1];

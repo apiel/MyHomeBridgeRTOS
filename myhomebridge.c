@@ -57,8 +57,8 @@ void user_init(void)
   wifi_init(); 
 //   wifi_new_connection(WIFI_SSID, WIFI_PASS);
 
+  spiffs_init(); // for action and triggers
   mqtt_init();
-//   spiffs_init();
 //   trigger_init();
   
   #if defined(PIN_RF433_EMITTER) || defined(PIN_RF433_RECEIVER)

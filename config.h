@@ -1,4 +1,7 @@
 
+#ifndef __CONFIG_H__
+#define __CONFIG_H__
+
 #define DEVICE_ID "MHB_"
 #define VERSION "0.0.0" 
 
@@ -43,3 +46,5 @@
 #define DHT_TYPE DHT_TYPE_DHT11
 
 #define UPNP true
+
+#endif

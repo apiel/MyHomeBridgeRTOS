@@ -91,12 +91,11 @@ void user_init(void)
 ToDo
 
 unit test
-ifndef to activate pir, rf emitter, rf receiver, photosensor, dht11
-mqtt send message with full path
+ifndef .h file
 trigger call reducer
-trigger accept -/-/-
-trigger should work also without mqtt --> thermostat
+trigger should work without mqtt --> thermostat
 rf receiver > look at rcswitch to make the new rf receive module working
+MQ-9
 
 we should make rf433 action two times...
 */

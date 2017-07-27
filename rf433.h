@@ -1,3 +1,7 @@
+
+#ifndef __RF433_H__
+#define __RF433_H__
+
 struct Pulse {
     uint16_t length;
     uint16_t tolerance;
@@ -17,3 +21,5 @@ struct RF433protocol
 void rf433_init(void);
 void rf433_action(char * request);
 void rf433_task(void *pvParameters);
+
+#endif

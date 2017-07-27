@@ -1,6 +1,7 @@
+#ifndef __MQTT_H__
+#define __MQTT_H__
 
 #include <lwip/api.h>
-#include <espressif/esp_common.h>
 
 QueueHandle_t publish_queue;
 
@@ -13,3 +14,5 @@ struct MQTTMessage
 void  mqtt_task(void *pvParameters);
 void mqtt_init();
 void insert_topic(char * topic);
+
+#endif

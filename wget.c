@@ -1,5 +1,4 @@
-#include <espressif/esp_common.h>
-
+#include <FreeRTOS.h>
 #include <espressif/esp_common.h>
 #include <string.h>
 
@@ -10,6 +9,13 @@
 #include <lwip/dns.h>
 
 #include "utils.h"
+
+// /home/alex/dev1/esp8266/MyHomeBridge/wget.c: In function 'wget':
+// /home/alex/dev1/esp8266/MyHomeBridge/wget.c:55:21: warning: implicit declaration of function 'write' [-Wimplicit-function-declaration]
+//                      if (write(s, req, strlen(req)) < 0) {
+//                      ^
+// /home/alex/dev1/esp8266/MyHomeBridge/wget.c:61:17: warning: implicit declaration of function 'close' [-Wimplicit-function-declaration]
+//                  close(s); 
 
 void wget(char * url)
 {
@@ -50,7 +56,7 @@ void wget(char * url)
                     strcat(req, next);
                     strcat(req, " HTTP/1.1\r\nHost: ");
                     strcat(req, host);
-                    strcat(req, "\r\nUser-Agent: esp-open-rtos/0.1 esp8266\r\n\r\n\r\n");
+                    strcat(req, "\r\nUser-Agent: esp-open-rtos/0.1 esp8266\r\n\r\n\r\n\r\n");
                     // printf("... req:\n%s", req);
                     if (write(s, req, strlen(req)) < 0) {
                         printf("... socket send failed\r\n");
@@ -58,7 +64,10 @@ void wget(char * url)
                         printf("... socket send success\r\n");                    
                     }
                 }
-                close(s);                    
+                close(s);                  
+            }
+            if (s) {
+                close(s);
             }
         }
         freeaddrinfo(res);

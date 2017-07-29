@@ -90,12 +90,14 @@ void user_init(void)
 
 ToDo
 
+Fix wget
+rf receiver > fix pulse
+MQ-9
+OTA
+remote debugging
 unit test
-ifndef .h file
 trigger call reducer
 trigger should work without mqtt --> thermostat
-rf receiver > look at rcswitch to make the new rf receive module working
-MQ-9
 
 we should make rf433 action two times...
 */

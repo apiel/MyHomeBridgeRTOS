@@ -40,11 +40,11 @@
 #define PIN_RF433_RECEIVER 12
 #define PIN_DHT 5
 // #define PIN_PIR 4
-#define PHOTORESISTOR true
+#define PHOTORESISTOR
 
 // #define DHT_TYPE DHT_TYPE_DHT22
 #define DHT_TYPE DHT_TYPE_DHT11
 
-#define UPNP true
+#define UPNP
 
 #endif

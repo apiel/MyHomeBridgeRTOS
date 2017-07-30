@@ -110,7 +110,7 @@ void httpd_task(void *pvParameters)
         printf("Failed to allocate socket\n");
         vTaskDelete(NULL);
     }
-    netconn_bind(nc, IP_ADDR_ANY, 80);
+    netconn_bind(nc, IP_ADDR_ANY, HTTPD_PORT);
     netconn_listen(nc);
     char * response = NULL;
     while (1) {

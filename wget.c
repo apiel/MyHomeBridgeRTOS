@@ -66,9 +66,9 @@ void wget(char * url)
                 }
                 close(s);                  
             }
-            if (s) {
-                close(s);
-            }
+            // if (s) {
+            //     close(s);
+            // }
         }
         freeaddrinfo(res);
     }

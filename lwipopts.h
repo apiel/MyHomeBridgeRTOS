@@ -32,19 +32,17 @@
 #ifndef __LWIPOPTS_H__
 #define __LWIPOPTS_H__
 
+// igmp_joingroup
+#include <esp/hwrand.h>
+#define LWIP_RAND hwrand
+#define LWIP_IGMP 1
+
 #define LWIP_ESP                            1
 #define ESP_RTOS                            1
 #define PBUF_RSV_FOR_WLAN                   1
 #define EBUF_LWIP                           1
 #define ESP_TIMEWAIT_THRESHOLD              10000
 #define LWIP_TIMEVAL_PRIVATE                0
-
-#define TCP_WND (TCP_MSS * 2)
-
-#define LWIP_IGMP 1
-#include <stdint.h>
-#include <esp/hwrand.h>
-#define LWIP_RAND hwrand
 
 /*
    -----------------------------------------------
@@ -458,7 +456,5 @@
  * DHCP_DEBUG: Enable debugging in dhcp.c.
  */
 #define DHCP_DEBUG                      LWIP_DBG_OFF
-
-#define LWIP_POSIX_SOCKETS_IO_NAMES     0
 
 #endif /* __LWIPOPTS_H__ */

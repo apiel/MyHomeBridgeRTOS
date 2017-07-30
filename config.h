@@ -10,7 +10,9 @@
 
 #define AP_PSK "myhomebridge" // between 8 and 63 ASCII-encoded characters
 
-// #define CAYENNE true
+#define HTTPD_PORT 80 // cannot use the same port as wget
+
+// #define CAYENNE
 
 #ifdef CAYENNE
     #define MQTT_USER "6c408f50-6e0d-11e7-b9da-0dc7f11adcec"

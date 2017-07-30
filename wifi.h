@@ -1,6 +1,6 @@
 
-#ifndef __WIFI_H__
-#define __WIFI_H__
+// #ifndef __WIFI_H__
+// #define __WIFI_H__
 
 void wifi_off(void);
 void wifi_init(void);
@@ -10,4 +10,4 @@ void wifi_access_point(void);
 void wifi_access_point_off(void);
 const char * get_uid(void);
 
-#endif
+// #endif

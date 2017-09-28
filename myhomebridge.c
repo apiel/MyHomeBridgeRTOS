@@ -1,3 +1,5 @@
+// esp open rtos commit 5e04c890d1b63495008c58550bcd85e0f99f9fcc
+
 #include <string.h>
 
 #include <espressif/esp_common.h>
@@ -68,7 +70,7 @@ void user_init(void)
   printf("MyHomeBridge version:%s\n", VERSION);
 
   wifi_init(); 
-// //   wifi_new_connection(WIFI_SSID, WIFI_PASS);
+  wifi_new_connection(WIFI_SSID, WIFI_PASS);
 
 //   spiffs_init(); // for action and triggers
   mqtt_init();

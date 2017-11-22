@@ -16,7 +16,8 @@
 
 struct RF433protocol rf433protocolss[] = {
     { {9900 , 1000}, {2675, 180}, {275, 180}, {1225, 180}, PULSE_LOW_LOW, PULSE_LOW_HIGH, true },
-    { {5700 , 50}, {0, 0}, {180, 100}, {551, 100}, PULSE_LOW_HIGH, PULSE_HIGH_LOW, false }
+    { {5700 , 50}, {0, 0}, {180, 100}, {551, 100}, PULSE_LOW_HIGH, PULSE_HIGH_LOW, false },
+    { {12500 , 300}, {0, 0}, {400, 100}, {1200, 100}, PULSE_LOW_HIGH, PULSE_HIGH_LOW, false }
     // , { {55000 , 5000}, {0, 0}, {2000, 100}, {21600, 100}, PULSE_LOW_HIGH, PULSE_HIGH_LOW, false }
 };
 
@@ -97,7 +98,8 @@ bool diff(long A, long B, int tolerance) {
 
 unsigned long micros()
 {
-    return xthal_get_ccount() / sdk_system_get_cpu_freq();
+    return sdk_system_get_time();
+    // return xthal_get_ccount() / sdk_system_get_cpu_freq();
 }
 
 // unsigned long bin2int(const char *bin) 
